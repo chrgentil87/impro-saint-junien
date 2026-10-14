@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Rencontre : glissez chaque phrase d'entrée en scène vers « bonne » ou « mauvaise introduction ».">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Rencontre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=Shrikhand&display=swap">
+<style>
+/* Mise en page : une colonne de téléphone. En haut le sigle et les deux compteurs, au centre la carte-phrase posée sur
+   son paquet, en bas les deux cases où la glisser (mauvaise à gauche, bonne à droite).
+   Même famille que les autres paquets de l'atelier : dos prune à croisillons safran, cartes papier. Look unique, indépendant du thème.
+   CSS compatible avec les anciens iPhone : pas de inset, color-mix, aspect-ratio ni unités de conteneur. */
+:root {
+  --table: #1b0c1f;
+  --table-glow: #3b1942;
+  --back: #5c2163;
+  --back-deep: #3c1241;
+  --saffron: #f2b134;
+  --saffron-15: rgba(242, 177, 52, .15);
+  --saffron-55: rgba(242, 177, 52, .55);
+  --paper: #fbf7f9;
+  --edge: #e6d9e3;
+  --ink: #24152a;
+  --ink-soft: #5a4a5f;
+  --rule: #eadde6;
+  --shadow: rgba(8, 2, 10, .55);
+
+  --good: #3c9057;  --good-ink: #2a6c3f;  --good-light: #7fd39a;  --good-tint: rgba(60, 144, 87, .14);
+  --bad: #e0543a;   --bad-ink: #b13a22;   --bad-light: #ff9077;   --bad-tint: rgba(224, 84, 58, .13);
+
+  --teal: #17909d;
+  --violet: #6b49b9;
+  --sun: #f0a53a;
+  --rose: #d9508d;
+
+  --display: "Shrikhand", Georgia, serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+
+  --radius: 20px;
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html { height: 100%; box-sizing: border-box; background: var(--table); -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background-color: var(--table);
+  background-image: radial-gradient(ellipse 90% 60% at 50% 45%, var(--table-glow), var(--table));
+  color: var(--paper);
+  font-family: var(--body);
+}
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app {
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Bandeau : sigle et compteurs ---------- */
+.top { flex: none; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; flex-direction: column; margin-right: 12px; }
+.brand-title { font-family: var(--display); color: var(--saffron); font-size: 1.75rem; line-height: 1; }
+.brand-by { margin-top: 5px; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--edge); }
+.scores { display: flex; }
+.chip {
+  min-width: 66px;
+  margin-left: 8px;
+  padding: 6px 10px 7px;
+  border-radius: 12px;
+  background: var(--back-deep);
+  text-align: center;
+  line-height: 1.1;
+}
+.chip b { display: block; font-family: var(--mono); font-weight: 500; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.chip span { display: block; margin-top: 2px; font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--edge); }
+.chip.good { border: 1px solid var(--good); }
+.chip.good b { color: var(--good-light); }
+.chip.bad { border: 1px solid var(--bad); }
+.chip.bad b { color: var(--bad-light); }
+.chip.bump { animation: bump .45s ease; }
+@keyframes bump { 0%, 100% { transform: none; } 40% { transform: scale(1.14); } }
+
+.progress { flex: none; margin-top: 12px; display: flex; align-items: center; }
+.progress-text {
+  flex: none;
+  min-width: 8.5em;
+  font-family: var(--mono);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--edge);
+  font-variant-numeric: tabular-nums;
+}
+.bar { flex: 1; height: 6px; border-radius: 3px; background: var(--back-deep); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--saffron); transition: width .35s ease; }
+
+/* ---------- La table : paquet et carte ---------- */
+.table { flex: 1 1 auto; min-height: 0; position: relative; margin: 14px 0 12px; }
+.stack { position: absolute; top: 0; right: 0; bottom: 0; left: 0; margin: auto 0; max-height: 470px; }
+
+.back-art {
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, var(--saffron-15) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(-45deg, var(--saffron-15) 0 2px, transparent 2px 22px);
+  color: var(--paper);
+}
+.pile { position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: var(--radius); }
+.pile[data-layers="2"] { box-shadow: 3px 3px 0 var(--back-deep), 4px 4px 0 var(--edge), 7px 7px 0 var(--back-deep), 8px 8px 0 var(--edge), 14px 18px 34px var(--shadow); }
+.pile[data-layers="1"] { box-shadow: 3px 3px 0 var(--back-deep), 4px 4px 0 var(--edge), 12px 16px 30px var(--shadow); }
+.pile[data-layers="0"] { box-shadow: 10px 14px 28px var(--shadow); }
+.pile[data-layers="none"] { display: none; }
+
+.card {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 16px 40px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px 14px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.card.is-play { touch-action: none; cursor: grab; }
+.card.dragging { cursor: grabbing; box-shadow: 0 26px 50px var(--shadow); }
+.card.snap { transition: transform .3s cubic-bezier(.2, .8, .3, 1.2); }
+.card.fly { transition: transform .38s cubic-bezier(.5, 0, .75, .3), opacity .38s ease-in; }
+.card.enter { animation: enter .35s cubic-bezier(.2, .8, .3, 1); }
+@keyframes enter { from { opacity: 0; transform: translateY(10px) scale(.95); } to { opacity: 1; transform: none; } }
+.card.is-feedback, .card.is-end { overflow-y: auto; -webkit-overflow-scrolling: touch; -webkit-user-select: text; user-select: text; }
+
+/* Carte d'accueil */
+.card.is-intro {
+  padding: 28px 24px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, var(--saffron-15) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(-45deg, var(--saffron-15) 0 2px, transparent 2px 22px);
+  color: var(--paper);
+}
+.card.is-intro::before,
+.card.is-intro::after { content: ""; position: absolute; pointer-events: none; }
+.card.is-intro::before { top: 11px; right: 11px; bottom: 11px; left: 11px; border: 2px solid var(--saffron); border-radius: 12px; }
+.card.is-intro::after { top: 17px; right: 17px; bottom: 17px; left: 17px; border: 1px solid var(--saffron-55); border-radius: 7px; }
+.meet { position: relative; width: 74px; height: 40px; margin-bottom: 14px; }
+.meet i { position: absolute; top: 0; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--saffron); }
+.meet i:first-child { left: 0; }
+.meet i:last-child { right: 0; background: var(--saffron-15); }
+.plaque {
+  position: relative;
+  z-index: 1;
+  padding: .35em .9em .45em;
+  border-radius: 14px;
+  background: var(--back-deep);
+  border: 3px solid var(--saffron);
+  box-shadow: 0 0 0 6px var(--back), 0 0 0 8px var(--saffron);
+}
+.plaque-title { display: block; font-family: var(--display); color: var(--saffron); font-size: 2.4rem; font-size: clamp(2rem, 10vw, 2.9rem); line-height: 1.1; }
+.plaque-by { display: block; font-family: var(--mono); font-size: .72rem; letter-spacing: .16em; color: var(--paper); }
+.intro-rule { position: relative; z-index: 1; max-width: 30ch; margin: 26px 0 0; font-size: 1.05rem; line-height: 1.45; text-wrap: balance; }
+.intro-meta { position: relative; z-index: 1; margin: 14px 0 0; font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--saffron); }
+
+/* Carte-phrase */
+.situ {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: .4em .85em .4em .6em;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--chip-fg);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.situ-emoji { font-family: var(--emoji); font-size: 1.15rem; line-height: 1; margin-right: .45em; letter-spacing: 0; }
+.phrase-wrap { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; padding: 14px 4px; }
+.geste { margin: 0 0 .6em; font-style: italic; font-size: 1.02rem; line-height: 1.35; color: var(--ink-soft); }
+.phrase { margin: 0; font-weight: 700; font-size: 1.5rem; font-size: clamp(1.3rem, 6.2vw, 1.85rem); line-height: 1.28; text-wrap: balance; }
+.q { font-family: var(--display); font-weight: 400; color: var(--back); }
+.card-foot { flex: none; margin: 0; padding-top: 10px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; color: var(--ink-soft); text-align: center; }
+
+.stamp {
+  position: absolute;
+  top: 58px;
+  padding: .12em .5em;
+  border: 3px solid currentColor;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 1.05rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  background: var(--paper);
+  opacity: 0;
+  pointer-events: none;
+}
+.stamp-good { left: 16px; color: var(--good-ink); transform: rotate(-12deg); }
+.stamp-bad { right: 16px; color: var(--bad-ink); transform: rotate(12deg); }
+
+/* Carte-réponse */
+.verdict {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: .2em .7em .3em .45em;
+  border-radius: 12px;
+  font-family: var(--display);
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+.verdict .ico { display: inline-block; width: 1.25em; height: 1.25em; margin-right: .35em; border-radius: 50%; color: var(--paper); font-family: var(--body); font-weight: 700; font-size: .7em; line-height: 1.25em; text-align: center; }
+.ok .verdict { background: var(--good-tint); color: var(--good-ink); }
+.ok .verdict .ico { background: var(--good); }
+.ko .verdict { background: var(--bad-tint); color: var(--bad-ink); }
+.ko .verdict .ico { background: var(--bad); }
+.answer { margin: 14px 0 0; font-size: 1.08rem; line-height: 1.4; }
+.tag-good { color: var(--good-ink); }
+.tag-bad { color: var(--bad-ink); }
+.recall { margin: 12px 0 0; padding: .1em 0 .1em .8em; border-left: 3px solid var(--rule); font-style: italic; font-size: 1rem; line-height: 1.4; color: var(--ink-soft); }
+.why { margin: 14px 0 16px; font-size: 1.15rem; line-height: 1.45; }
+.feedback-body { flex: 1 0 auto; }
+
+/* Carte de fin */
+.end-label { margin: 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+.end-score { margin: 6px 0 0; font-size: 1.05rem; color: var(--ink); }
+.end-score b { font-family: var(--display); font-weight: 400; font-size: 3.2rem; line-height: 1; color: var(--good-ink); margin-right: .12em; }
+.end-bad { margin: 4px 0 0; font-size: 1rem; color: var(--bad-ink); }
+.end-msg { margin: 12px 0 0; font-size: 1.08rem; line-height: 1.4; }
+.missed { margin: 16px 0 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.missed-title { margin: 0 0 8px; font-family: var(--mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+.missed ol { margin: 0; padding: 0; list-style: none; }
+.missed li { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.missed li:last-child { border-bottom: 0; }
+.m-phrase { margin: 0; font-weight: 700; line-height: 1.35; }
+.m-why { margin: 4px 0 0; font-size: .95rem; line-height: 1.4; color: var(--ink-soft); }
+
+/* ---------- Les cases ---------- */
+.actions { flex: none; height: 92px; display: flex; }
+.bins { display: flex; width: 100%; }
+.bin {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: var(--back-deep);
+  color: var(--paper);
+  font-weight: 700;
+  font-size: .98rem;
+  line-height: 1.2;
+  text-align: center;
+  transition: transform .15s ease, background .15s ease;
+}
+.bin + .bin { margin-left: 12px; }
+.bin .ico { display: block; width: 30px; height: 30px; margin-bottom: 6px; border-radius: 50%; color: var(--paper); font-size: 1rem; line-height: 30px; }
+.bin-bad { border: 2px solid var(--bad); }
+.bin-bad .ico { background: var(--bad); }
+.bin-good { border: 2px solid var(--good); }
+.bin-good .ico { background: var(--good); }
+.bin-bad.armed { background: var(--bad); transform: scale(1.04); }
+.bin-good.armed { background: var(--good); transform: scale(1.04); }
+.bin-bad.armed .ico, .bin-good.armed .ico { background: var(--paper); color: var(--ink); }
+.bin.flash-ok { animation: flash-ok .7s ease; }
+.bin.flash-ko { animation: flash-ko .5s ease; }
+@keyframes flash-ok { 0% { box-shadow: 0 0 0 0 rgba(127, 211, 154, .9); } 100% { box-shadow: 0 0 0 18px rgba(127, 211, 154, 0); } }
+@keyframes flash-ko { 0%, 100% { transform: none; } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+@media (hover: hover) {
+  .bin-bad:hover { background: var(--bad); }
+  .bin-good:hover { background: var(--good); }
+}
+.bin:focus-visible { outline: 3px solid var(--saffron); outline-offset: 3px; }
+
+.act {
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  background: var(--saffron);
+  color: var(--back-deep);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+@media (hover: hover) { .act:hover { background: var(--paper); } }
+.act:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
+
+.hint { flex: none; margin: 10px 0 0; min-height: 1.3em; text-align: center; font-size: .85rem; line-height: 1.3; color: var(--edge); }
+
+@media (max-height: 600px) {
+  .app { padding-top: 8px; }
+  .brand-title { font-size: 1.45rem; }
+  .progress { margin-top: 8px; }
+  .table { margin: 10px 0 8px; }
+  .actions { height: 80px; }
+  .hint { margin-top: 6px; font-size: .8rem; }
+  .phrase { font-size: 1.3rem; }
+  .meet { display: none; }
+  .intro-rule { margin-top: 18px; font-size: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.snap, .card.fly { transition: none; }
+  .card.enter, .chip.bump, .bin.flash-ok, .bin.flash-ko { animation: none; }
+  .bar i { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<main class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-title">Rencontre</span>
+      <span class="brand-by">© C. Gentil</span>
+    </div>
+    <div class="scores">
+      <div class="chip good" id="chip-good"><b id="n-good">0</b><span>bons points</span></div>
+      <div class="chip bad" id="chip-bad"><b id="n-bad">0</b><span>mauvais points</span></div>
+    </div>
+  </header>
+
+  <div class="progress">
+    <span class="progress-text" id="progress-text">30 phrases</span>
+    <span class="bar" aria-hidden="true"><i id="bar-fill"></i></span>
+  </div>
+
+  <section class="table">
+    <div class="stack" id="stack">
+      <div class="pile back-art" id="pile" data-layers="2" aria-hidden="true"></div>
+      <article class="card is-intro back-art" id="card" aria-live="polite">
+        <div class="meet" aria-hidden="true"><i></i><i></i></div>
+        <div class="plaque"><span class="plaque-title">Rencontre</span><span class="plaque-by">© C. Gentil</span></div>
+        <p class="intro-rule">Deux personnages se rencontrent. Une bonne introduction fait une offre sur soi, le lieu ou la relation, sans rien imposer au partenaire.</p>
+        <p class="intro-meta">30 phrases · voiture, bateau, bar, rue</p>
+      </article>
+    </div>
+  </section>
+
+  <div class="actions">
+    <div class="bins" id="bins" hidden>
+      <button class="bin bin-bad" id="bin-bad" type="button"><span class="ico" aria-hidden="true">✗</span>Mauvaise introduction</button>
+      <button class="bin bin-good" id="bin-good" type="button"><span class="ico" aria-hidden="true">✓</span>Bonne introduction</button>
+    </div>
+    <button class="act" id="act" type="button">Commencer</button>
+  </div>
+  <p class="hint" id="hint">Lisez la règle, puis touchez « Commencer ».</p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var LIEUX = {
+    voiture: { label: "Dans une voiture", emoji: "🚗", bg: "var(--teal)", fg: "var(--paper)" },
+    bateau:  { label: "Sur un bateau",    emoji: "⛵", bg: "var(--violet)", fg: "var(--paper)" },
+    bar:     { label: "Dans un bar",      emoji: "🍸", bg: "var(--sun)", fg: "var(--ink)" },
+    rue:     { label: "Dans la rue",      emoji: "🏙️", bg: "var(--rose)", fg: "var(--paper)" }
+  };
+
+  var CARDS = [
+    // Dans une voiture
+    { lieu: "voiture", geste: "Ajuste longuement le rétroviseur.", texte: "Je n'ai pas conduit depuis mon permis.", bonne: true,
+      pourquoi: "Une offre claire sur soi : le partenaire reste libre de choisir qui il est et comment il réagit." },
+    { lieu: "voiture", texte: "Monte, maman, ton médecin t'attend et il déteste les retards.", bonne: false,
+      pourquoi: "En une phrase, on impose au partenaire son identité, un rendez-vous et la culpabilité du retard." },
+    { lieu: "voiture", texte: "Il y a un siège bébé à l'arrière.", bonne: true,
+      pourquoi: "Une offre sur le lieu qui intrigue, sans rien décider à la place du partenaire." },
+    { lieu: "voiture", texte: "Tu conduis trop vite, tu vas encore nous tuer !", bonne: false,
+      pourquoi: "On impose un comportement à quelqu'un qui n'a même pas démarré." },
+    { lieu: "voiture", texte: "Ça fait des années qu'on n'a pas fait la route ensemble, nous deux.", bonne: true,
+      pourquoi: "La relation est posée, mais c'est le partenaire qui décide de ce qu'elle a été." },
+    { lieu: "voiture", texte: "Bon, on va où ?", bonne: false,
+      pourquoi: "On n'impose rien, mais on n'offre rien non plus : tout le travail retombe sur le partenaire." },
+    { lieu: "voiture", geste: "Serre son sac contre lui.", texte: "J'ai pris le sac, comme prévu.", bonne: true,
+      pourquoi: "Un geste et une offre précise : c'est le partenaire qui décidera de ce qu'il y a dans le sac." },
+    { lieu: "voiture", texte: "Arrête de pleurer, ce n'est qu'une rayure sur la portière.", bonne: false,
+      pourquoi: "On impose au partenaire une émotion qu'il n'a pas choisi de jouer." },
+
+    // Sur un bateau
+    { lieu: "bateau", geste: "S'agrippe au bastingage.", texte: "Je n'avais jamais vu la mer avant aujourd'hui.", bonne: true,
+      pourquoi: "Une offre sur soi, concrète et physique, qui laisse le partenaire entièrement libre." },
+    { lieu: "bateau", texte: "Capitaine, vous êtes ivre et nous allons droit sur les rochers !", bonne: false,
+      pourquoi: "On décide du métier du partenaire, de son état et de la catastrophe, sans lui laisser de place." },
+    { lieu: "bateau", texte: "Le moteur fait un drôle de bruit depuis qu'on a quitté le port.", bonne: true,
+      pourquoi: "Une offre sur le lieu qui crée un enjeu commun, sans rien imposer au partenaire." },
+    { lieu: "bateau", texte: "Qui êtes-vous ? Et qu'est-ce que vous faites sur mon bateau ?", bonne: false,
+      pourquoi: "Deux questions directes : le partenaire doit tout inventer seul, et sous pression." },
+    { lieu: "bateau", texte: "On s'était promis de rentrer avant la nuit, toi et moi.", bonne: true,
+      pourquoi: "Un lien et un enjeu partagés, sans définir qui est le partenaire." },
+    { lieu: "bateau", texte: "Tu as encore oublié les gilets de sauvetage, comme d'habitude.", bonne: false,
+      pourquoi: "On attribue au partenaire une faute et un défaut qu'il n'a pas proposés." },
+    { lieu: "bateau", geste: "Déplie une vieille carte marine.", texte: "D'après mon grand-père, c'est par ici.", bonne: true,
+      pourquoi: "Un objet et une offre sur soi qui ouvrent une aventure à construire à deux." },
+
+    // Dans un bar
+    { lieu: "bar", geste: "Pose deux verres sur le comptoir.", texte: "J'en ai commandé un pour toi, au cas où.", bonne: true,
+      pourquoi: "Une attention concrète qui propose une relation, sans dire laquelle." },
+    { lieu: "bar", texte: "Tu es encore venu boire pour oublier ta femme ?", bonne: false,
+      pourquoi: "On impose au partenaire un passé, un couple et une habitude qu'il n'a pas choisis." },
+    { lieu: "bar", texte: "C'est la première fois que je viens seul dans un bar.", bonne: true,
+      pourquoi: "Une offre sur soi, avec une fragilité dont le partenaire peut se saisir." },
+    { lieu: "bar", texte: "Je sais que c'est toi qui as vidé la caisse hier soir.", bonne: false,
+      pourquoi: "On accuse le partenaire d'un acte qu'il n'a pas choisi : il ne peut plus que nier ou subir." },
+    { lieu: "bar", texte: "Toi, tu n'as pas changé.", bonne: true,
+      pourquoi: "Une phrase ouverte : c'est le partenaire qui précise ce qui n'a pas changé." },
+    { lieu: "bar", texte: "Pourquoi tu fais cette tête ?", bonne: false,
+      pourquoi: "On impose une émotion, et la question renvoie tout le travail au partenaire." },
+    { lieu: "bar", geste: "Regarde sa montre.", texte: "Il est en retard. Comme toujours.", bonne: true,
+      pourquoi: "Une offre sur un absent qui crée une attente commune, sans définir le partenaire." },
+    { lieu: "bar", texte: "Arrête de me suivre partout, je t'ai déjà dit non !", bonne: false,
+      pourquoi: "On écrit à la place du partenaire son comportement et toute une histoire passée." },
+
+    // Dans la rue
+    { lieu: "rue", geste: "S'arrête net devant une vitrine.", texte: "Avant, c'était la boulangerie de mes parents.", bonne: true,
+      pourquoi: "Une offre sur soi et sur le lieu, que le partenaire peut prolonger comme il veut." },
+    { lieu: "rue", texte: "Monsieur l'agent, je n'ai rien fait, je vous le jure !", bonne: false,
+      pourquoi: "On fixe le métier du partenaire et toute la situation avant qu'il ait pu proposer quoi que ce soit." },
+    { lieu: "rue", geste: "Tend la moitié de son parapluie.", texte: "Il y a de la place pour deux.", bonne: true,
+      pourquoi: "Un geste généreux qui crée un lien, sans dire qui est le partenaire." },
+    { lieu: "rue", texte: "Ah, te voilà enfin, mon fils ! Ta sœur est à l'hôpital.", bonne: false,
+      pourquoi: "On impose un lien de parenté et un drame : le partenaire n'a plus rien à proposer." },
+    { lieu: "rue", texte: "Je suis perdu. Ça fait une heure que je tourne autour de cette fontaine.", bonne: true,
+      pourquoi: "Une offre sur soi et sur le lieu qui appelle une réaction, sans l'imposer." },
+    { lieu: "rue", texte: "Tu te souviens de moi ? Au lycée, tu m'as piqué ma copine.", bonne: false,
+      pourquoi: "On écrit le passé du partenaire, y compris une faute qu'il n'a pas choisie." },
+    { lieu: "rue", geste: "Compte des pièces dans sa main.", texte: "Il m'en manque deux pour le bus.", bonne: true,
+      pourquoi: "Un besoin concret sur soi : le partenaire choisit d'aider, d'ignorer ou d'en profiter." }
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  var stack = $("stack"), pile = $("pile"), cardEl = $("card"),
+      nGood = $("n-good"), nBad = $("n-bad"), chipGood = $("chip-good"), chipBad = $("chip-bad"),
+      progressText = $("progress-text"), barFill = $("bar-fill"),
+      bins = $("bins"), binGood = $("bin-good"), binBad = $("bin-bad"), act = $("act"), hint = $("hint");
+
+  var reduce = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+
+  // Typographie française : espaces insécables avant ! ? : ;
+  function fr(s) { return String(s).replace(/ ([!?:;»])/g, " $1").replace(/« /g, "« "); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function t(s) { return esc(fr(s)); }
+  function pl(n, one, many) { return n + " " + (n > 1 ? many : one); }
+  function focusEl(el) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+
+  // État de la partie
+  var order = [], idx = 0, good = 0, bad = 0, missed = [], phase = "intro", choice = null, busy = false;
+
+  function shuffle() {
+    order = CARDS.map(function (_, i) { return i; });
+    for (var i = order.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
+    idx = 0; good = 0; bad = 0; missed = []; choice = null;
+  }
+
+  function current() { return CARDS[order[idx]]; }
+  function lastCorrect() { return (choice === "good") === current().bonne; }
+
+  function quote(c) {
+    return '<span class="q" aria-hidden="true">«</span>&nbsp;' + t(c.texte) + '&nbsp;<span class="q" aria-hidden="true">»</span>';
+  }
+
+  function cardHtml() {
+    var c, l;
+    if (phase === "intro") {
+      return '<div class="meet" aria-hidden="true"><i></i><i></i></div>' +
+        '<div class="plaque"><span class="plaque-title">Rencontre</span><span class="plaque-by">© C. Gentil</span></div>' +
+        '<p class="intro-rule">' + t("Deux personnages se rencontrent. Une bonne introduction fait une offre sur soi, le lieu ou la relation, sans rien imposer au partenaire.") + '</p>' +
+        '<p class="intro-meta">' + CARDS.length + ' phrases · voiture, bateau, bar, rue</p>';
+    }
+    if (phase === "play") {
+      c = current(); l = LIEUX[c.lieu];
+      return '<span class="stamp stamp-good" aria-hidden="true">Bonne</span>' +
+        '<span class="stamp stamp-bad" aria-hidden="true">Mauvaise</span>' +
+        '<div class="situ" style="--chip:' + l.bg + ';--chip-fg:' + l.fg + '"><span class="situ-emoji" aria-hidden="true">' + l.emoji + '</span>' + esc(l.label) + '</div>' +
+        '<div class="phrase-wrap">' +
+          (c.geste ? '<p class="geste">(' + t(c.geste) + ')</p>' : '') +
+          '<p class="phrase">' + quote(c) + '</p>' +
+        '</div>' +
+        '<p class="card-foot">Rencontre © C. Gentil</p>';
+    }
+    if (phase === "feedback") {
+      c = current();
+      var ok = lastCorrect();
+      return '<div class="feedback-body">' +
+        '<div class="verdict"><span class="ico" aria-hidden="true">' + (ok ? "✓" : "✗") + '</span>' + (ok ? "Bien vu&nbsp;!" : "Raté&nbsp;!") + '</div>' +
+        '<p class="answer">C\'était une <strong class="' + (c.bonne ? "tag-good" : "tag-bad") + '">' + (c.bonne ? "bonne" : "mauvaise") + ' introduction</strong>.</p>' +
+        '<p class="recall">' + (c.geste ? "(" + t(c.geste) + ") " : "") + "«&nbsp;" + t(c.texte) + "&nbsp;»</p>" +
+        '<p class="why">' + t(c.pourquoi) + '</p>' +
+        '</div>' +
+        '<p class="card-foot">Rencontre © C. Gentil</p>';
+    }
+    // Fin de partie
+    var n = CARDS.length, msg;
+    if (good >= n - 3) msg = "Vous lancez une scène sans marcher sur les pieds de personne.";
+    else if (good >= Math.round(n * 0.66)) msg = "Belle écoute. Relisez les phrases manquées pour affiner vos réflexes.";
+    else msg = "Relisez les explications ci-dessous, puis rejouez une partie.";
+    var list = "";
+    if (missed.length) {
+      list = '<div class="missed"><p class="missed-title">À revoir</p><ol>' + missed.map(function (k) {
+        var m = CARDS[k];
+        return '<li><p class="m-phrase">«&nbsp;' + t(m.texte) + '&nbsp;»</p><p class="m-why"><strong class="' + (m.bonne ? "tag-good" : "tag-bad") + '">' +
+          (m.bonne ? "Bonne" : "Mauvaise") + ' introduction.</strong> ' + t(m.pourquoi) + '</p></li>';
+      }).join("") + '</ol></div>';
+    } else {
+      list = '<div class="missed"><p class="missed-title">À revoir</p><p class="m-why">Aucune erreur sur cette partie.</p></div>';
+    }
+    return '<p class="end-label">Partie terminée</p>' +
+      '<p class="end-score"><b>' + good + '</b> ' + (good > 1 ? "bons points" : "bon point") + ' sur ' + n + '</p>' +
+      '<p class="end-bad">' + pl(bad, "mauvais point", "mauvais points") + '</p>' +
+      '<p class="end-msg">' + t(msg) + '</p>' + list +
+      '<p class="card-foot">Rencontre © C. Gentil</p>';
+  }
+
+  function renderScores() {
+    nGood.textContent = good;
+    nBad.textContent = bad;
+    chipGood.querySelector("span").textContent = good > 1 ? "bons points" : "bon point";
+    chipBad.querySelector("span").textContent = bad > 1 ? "mauvais points" : "mauvais point";
+  }
+
+  function render() {
+    var n = CARDS.length;
+    renderScores();
+
+    var done = phase === "intro" ? 0 : phase === "end" ? n : idx + (phase === "feedback" ? 1 : 0);
+    barFill.style.width = (done / n * 100) + "%";
+    progressText.textContent = phase === "intro" ? n + " phrases" : phase === "end" ? "Partie terminée" : "Phrase " + (idx + 1) + " / " + n;
+
+    var rest = phase === "intro" ? n - 1 : phase === "end" ? -1 : n - idx - 1;
+    pile.setAttribute("data-layers", rest >= 2 ? "2" : rest === 1 ? "1" : rest === 0 ? "0" : "none");
+
+    var cls = "card is-" + phase;
+    if (phase === "intro") cls += " back-art";
+    if (phase === "feedback") cls += lastCorrect() ? " ok" : " ko";
+    cardEl.className = cls;
+    cardEl.style.transform = "";
+    cardEl.style.opacity = "";
+    cardEl.innerHTML = cardHtml();
+    cardEl.scrollTop = 0;
+
+    bins.hidden = phase !== "play";
+    act.hidden = phase === "play";
+    act.textContent = phase === "intro" ? "Commencer" : phase === "feedback" ? (idx === n - 1 ? "Voir mon score" : "Phrase suivante") : "Rejouer";
+
+    hint.textContent = phase === "intro" ? fr("Lisez la règle, puis touchez « Commencer ».")
+      : phase === "play" ? "Glissez la phrase vers une case, ou touchez la case."
+      : phase === "feedback" ? "Lisez l'explication, puis passez à la suite."
+      : "Les phrases sont remélangées à chaque partie.";
+  }
+
+  function enter() {
+    if (reduce.matches) return;
+    cardEl.classList.remove("enter");
+    void cardEl.offsetWidth;
+    cardEl.classList.add("enter");
+  }
+  cardEl.addEventListener("animationend", function () { cardEl.classList.remove("enter"); });
+
+  function bump(el) {
+    el.classList.remove("bump");
+    void el.offsetWidth;
+    el.classList.add("bump");
+  }
+  chipGood.addEventListener("animationend", function () { chipGood.classList.remove("bump"); });
+  chipBad.addEventListener("animationend", function () { chipBad.classList.remove("bump"); });
+
+  function flash(bin, ok) {
+    var c = ok ? "flash-ok" : "flash-ko";
+    bin.classList.remove("flash-ok", "flash-ko");
+    void bin.offsetWidth;
+    bin.classList.add(c);
+    setTimeout(function () { bin.classList.remove(c); }, 750);
+  }
+
+  function setArmed(side) {
+    binGood.classList.toggle("armed", side === "good");
+    binBad.classList.toggle("armed", side === "bad");
+  }
+
+  // ---------- Déroulé ----------
+  function start() {
+    if (busy || phase !== "intro") return;
+    shuffle();
+    phase = "play";
+    render();
+    enter();
+  }
+
+  function choose(side) {
+    if (phase !== "play" || busy) return;
+    busy = true;
+    choice = side;
+    var ok = lastCorrect();
+    if (ok) { good++; bump(chipGood); } else { bad++; missed.push(order[idx]); bump(chipBad); }
+    renderScores();
+
+    var bin = side === "good" ? binGood : binBad;
+    flash(bin, ok);
+    setArmed(null);
+
+    var sr = stack.getBoundingClientRect(), br = bin.getBoundingClientRect();
+    var tx = (br.left + br.width / 2) - (sr.left + sr.width / 2);
+    var ty = (br.top + br.height / 2) - (sr.top + sr.height / 2);
+    cardEl.classList.remove("dragging", "snap", "enter");
+    cardEl.classList.add("fly");
+    void cardEl.offsetWidth;
+    cardEl.style.transform = "translate(" + tx + "px," + ty + "px) scale(.12) rotate(" + (side === "good" ? 14 : -14) + "deg)";
+    cardEl.style.opacity = "0";
+
+    setTimeout(function () {
+      phase = "feedback";
+      render();
+      enter();
+      busy = false;
+      focusEl(act);
+    }, reduce.matches ? 0 : 380);
+  }
+
+  function next() {
+    if (busy || phase !== "feedback") return;
+    idx++;
+    phase = idx >= order.length ? "end" : "play";
+    if (phase === "end") idx = order.length - 1;
+    render();
+    enter();
+    if (phase === "end") focusEl(act);
+  }
+
+  function restart() {
+    if (busy || phase !== "end") return;
+    shuffle();
+    phase = "play";
+    render();
+    enter();
+  }
+
+  act.addEventListener("click", function () {
+    if (phase === "intro") start();
+    else if (phase === "feedback") next();
+    else if (phase === "end") restart();
+  });
+  binGood.addEventListener("click", function () { choose("good"); });
+  binBad.addEventListener("click", function () { choose("bad"); });
+  cardEl.addEventListener("click", function () { if (phase === "intro") start(); });
+
+  document.addEventListener("keydown", function (e) {
+    if (phase === "play" && e.key === "ArrowRight") { e.preventDefault(); choose("good"); }
+    else if (phase === "play" && e.key === "ArrowLeft") { e.preventDefault(); choose("bad"); }
+    else if ((e.key === "Enter" || e.key === " ") && document.activeElement === document.body) {
+      e.preventDefault();
+      act.click();
+    }
+  });
+
+  // ---------- Glisser la carte (doigt ou souris) ----------
+  var drag = null, activePointer = null;
+
+  function inRect(x, y, r, pad) { return x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad; }
+  function targetAt(x, y) {
+    if (inRect(x, y, drag.rGood, 14)) return "good";
+    if (inRect(x, y, drag.rBad, 14)) return "bad";
+    if (drag.dx > drag.th) return "good";
+    if (drag.dx < -drag.th) return "bad";
+    return null;
+  }
+  function dragStart(x, y) {
+    if (phase !== "play" || busy || drag) return false;
+    var sr = stack.getBoundingClientRect();
+    drag = { x0: x, y0: y, dx: 0, dy: 0, target: null,
+             th: Math.min(120, sr.width * 0.3),
+             rGood: binGood.getBoundingClientRect(), rBad: binBad.getBoundingClientRect() };
+    cardEl.classList.remove("snap", "enter");
+    cardEl.classList.add("dragging");
+    return true;
+  }
+  function dragMove(x, y) {
+    if (!drag) return;
+    drag.dx = x - drag.x0;
+    drag.dy = y - drag.y0;
+    cardEl.style.transform = "translate(" + drag.dx + "px," + drag.dy + "px) rotate(" + (drag.dx * 0.06) + "deg)";
+    var tg = targetAt(x, y);
+    drag.target = tg;
+    setArmed(tg);
+    var p = Math.max(-1, Math.min(1, drag.dx / drag.th));
+    var sg = cardEl.querySelector(".stamp-good"), sb = cardEl.querySelector(".stamp-bad");
+    if (sg) sg.style.opacity = tg === "good" ? 1 : (tg === "bad" ? 0 : Math.max(0, p));
+    if (sb) sb.style.opacity = tg === "bad" ? 1 : (tg === "good" ? 0 : Math.max(0, -p));
+  }
+  function snapBack() {
+    cardEl.classList.remove("dragging");
+    cardEl.classList.add("snap");
+    cardEl.style.transform = "";
+    var stamps = cardEl.querySelectorAll(".stamp");
+    for (var i = 0; i < stamps.length; i++) stamps[i].style.opacity = "";
+    setTimeout(function () { cardEl.classList.remove("snap"); }, 320);
+  }
+  function dragEnd() {
+    if (!drag) return;
+    var tg = drag.target;
+    drag = null;
+    activePointer = null;
+    setArmed(null);
+    if (tg) choose(tg); else snapBack();
+  }
+  function dragCancel() {
+    if (!drag) return;
+    drag = null;
+    activePointer = null;
+    setArmed(null);
+    snapBack();
+  }
+
+  if (window.PointerEvent) {
+    cardEl.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (!dragStart(e.clientX, e.clientY)) return;
+      activePointer = e.pointerId;
+      try { cardEl.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    cardEl.addEventListener("pointermove", function (e) { if (drag && e.pointerId === activePointer) dragMove(e.clientX, e.clientY); });
+    cardEl.addEventListener("pointerup", function (e) { if (drag && e.pointerId === activePointer) dragEnd(); });
+    cardEl.addEventListener("pointercancel", function (e) { if (drag && e.pointerId === activePointer) dragCancel(); });
+  } else {
+    // Anciens navigateurs : événements tactiles et souris
+    cardEl.addEventListener("touchstart", function (e) { var p = e.changedTouches[0]; dragStart(p.clientX, p.clientY); }, { passive: true });
+    cardEl.addEventListener("touchmove", function (e) { var p = e.changedTouches[0]; dragMove(p.clientX, p.clientY); }, { passive: true });
+    cardEl.addEventListener("touchend", dragEnd);
+    cardEl.addEventListener("touchcancel", dragCancel);
+    cardEl.addEventListener("mousedown", function (e) { if (e.button === 0) dragStart(e.clientX, e.clientY); });
+    document.addEventListener("mousemove", function (e) { dragMove(e.clientX, e.clientY); });
+    document.addEventListener("mouseup", dragEnd);
+  }
+  // Pendant le glissement, la page ne doit ni défiler ni rebondir (iPhone)
+  document.addEventListener("touchmove", function (e) { if (drag) e.preventDefault(); }, { passive: false });
+
+  // ---------- Démarrage ----------
+  shuffle();
+  render();
+
+  // Si la page est mise à jour pendant une partie, on retrouve la partie en cours
+  function restore(data) {
+    if (!data || phase !== "intro") return;
+    var okOrder = Object.prototype.toString.call(data.order) === "[object Array]" && data.order.length === CARDS.length;
+    if (!okOrder || typeof data.idx !== "number" || ["play", "feedback", "end"].indexOf(data.phase) < 0) return;
+    order = data.order.slice();
+    idx = Math.min(Math.max(Math.floor(data.idx), 0), order.length - 1);
+    good = typeof data.good === "number" ? data.good : 0;
+    bad = typeof data.bad === "number" ? data.bad : 0;
+    missed = Object.prototype.toString.call(data.missed) === "[object Array]" ? data.missed.filter(function (k) { return !!CARDS[k]; }) : [];
+    choice = data.choice === "good" || data.choice === "bad" ? data.choice : null;
+    phase = data.phase === "feedback" && !choice ? "play" : data.phase;
+    render();
+  }
+  try {
+    var hot = window.claude && window.claude.hot;
+    if (hot && typeof hot.snapshot === "function") {
+      hot.snapshot(function () { return { order: order, idx: idx, good: good, bad: bad, missed: missed, phase: phase, choice: choice }; });
+    }
+    if (hot && typeof hot.ready === "function") hot.ready(restore);
+    else if (hot && hot.data) restore(hot.data);
+  } catch (err) {}
+})();
+</script>
+</body>
+</html>
