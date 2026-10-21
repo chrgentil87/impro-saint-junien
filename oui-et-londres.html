@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Oui, et… à Londres : 30 répliques à choisir pour faire avancer l'histoire de deux copines, du parking souterrain au centre de la Terre.">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Oui, et… à Londres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=Shrikhand&display=swap">
+<style>
+/* Deuxième histoire « Oui, et… » : la carte Parking souterrain › Grille d'égout › Centre de la Terre.
+   Mise en page : une colonne de téléphone qui défile. En haut le sigle et les deux compteurs (fixés),
+   puis la réplique reçue dans une bulle, les quatre réponses possibles, et l'explication après chaque choix.
+   L'histoire complète se déplie sous le jeu, puis s'affiche en entier à la fin.
+   Même famille que les autres jeux de l'atelier : fond vert sapin, accents safran, cartes papier.
+   Look unique, indépendant du thème. CSS compatible avec les anciens iPhone (pas de inset, color-mix, aspect-ratio). */
+:root {
+  --table: #0b1912;
+  --table-glow: #1d3b2b;
+  --back: #2c6e4f;
+  --back-deep: #163a29;
+  --line: rgba(234, 244, 238, .22);
+  --saffron: #f2b134;
+  --paper: #f8faf8;
+  --edge: #d7e5dc;
+  --ink: #16241c;
+  --ink-soft: #4d5f55;
+  --rule: #dfe8e2;
+  --shadow: rgba(2, 8, 5, .5);
+
+  --good: #3c9057;  --good-ink: #2a6c3f;  --good-light: #8fe0aa;  --good-tint: rgba(60, 144, 87, .14);
+  --bad: #e0543a;   --bad-ink: #b13a22;   --bad-light: #ff9a82;   --bad-tint: rgba(224, 84, 58, .13);
+
+  --odette: #d9508d; --odette-ink: #ad2f68; --odette-light: #ff9cc6;
+  --gaston: #17909d; --gaston-ink: #0d6b75; --gaston-light: #7fd6df;
+
+  --display: "Shrikhand", Georgia, serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html { box-sizing: border-box; background: var(--table); -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--table);
+  background-image: radial-gradient(ellipse 90% 50% at 50% 20%, var(--table-glow), var(--table));
+  background-attachment: fixed;
+  color: var(--paper);
+  font-family: var(--body);
+  font-size: 16px;
+}
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
+
+/* ---------- Bandeau : sigle et compteurs ---------- */
+.top {
+  position: -webkit-sticky;
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  margin: 0 -16px;
+  padding: 10px 16px 10px;
+  background: var(--table);
+  border-bottom: 1px solid var(--line);
+}
+.top-row { display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; flex-direction: column; margin-right: 12px; }
+.brand-title { font-family: var(--display); color: var(--saffron); font-size: 1.75rem; line-height: 1; }
+.brand-by { margin-top: 5px; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--edge); }
+.scores { display: flex; }
+.chip { min-width: 66px; margin-left: 8px; padding: 6px 10px 7px; border-radius: 12px; background: var(--back-deep); text-align: center; line-height: 1.1; }
+.chip b { display: block; font-family: var(--mono); font-weight: 500; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.chip span { display: block; margin-top: 2px; font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--edge); }
+.chip.good { border: 1px solid var(--good); }
+.chip.good b { color: var(--good-light); }
+.chip.bad { border: 1px solid var(--bad); }
+.chip.bad b { color: var(--bad-light); }
+.chip.bump { animation: bump .45s ease; }
+@keyframes bump { 0%, 100% { transform: none; } 40% { transform: scale(1.14); } }
+
+.progress { margin-top: 10px; display: flex; align-items: center; }
+.progress-text { flex: none; min-width: 9em; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--edge); font-variant-numeric: tabular-nums; }
+.bar { flex: 1; height: 6px; border-radius: 3px; background: var(--back-deep); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--saffron); transition: width .35s ease; }
+
+/* ---------- Écran d'accueil ---------- */
+.intro {
+  margin-top: 22px;
+  padding: 26px 22px 24px;
+  border-radius: 20px;
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(242, 177, 52, .14) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(-45deg, rgba(242, 177, 52, .14) 0 2px, transparent 2px 22px);
+  border: 2px solid var(--saffron);
+  text-align: center;
+}
+.intro-cast { display: flex; justify-content: center; margin-bottom: 16px; }
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-family: var(--display);
+  font-size: 1.6rem;
+  color: var(--paper);
+  border: 3px solid var(--paper);
+}
+.avatar + .avatar { margin-left: -10px; }
+.avatar.o { background: var(--odette); }
+.avatar.g { background: var(--gaston); }
+.intro h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 2.2rem; line-height: 1.1; color: var(--saffron); }
+.intro-sub { margin: 6px 0 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--paper); }
+.trip { margin: 18px auto 0; padding: 0; list-style: none; display: flex; justify-content: center; max-width: 30em; }
+.trip li { position: relative; flex: 1 1 0; min-width: 0; padding: 0 4px; font-size: .82rem; line-height: 1.25; color: var(--paper); }
+.trip li + li::before { content: "›"; position: absolute; left: -6px; top: 12px; color: var(--saffron); font-size: 1.3rem; line-height: 1; }
+.trip-e { display: block; width: 48px; height: 48px; margin: 0 auto 6px; border-radius: 50%; background: var(--paper); font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 26px; line-height: 48px; }
+.intro p.rule { max-width: 34ch; margin: 18px auto 0; font-size: 1.08rem; line-height: 1.5; text-wrap: balance; }
+.legend { margin: 18px auto 0; padding: 0; list-style: none; max-width: 30ch; text-align: left; font-size: .95rem; line-height: 1.4; }
+.legend li { display: flex; align-items: baseline; padding: 3px 0; }
+.legend .tag { flex: none; margin-right: 10px; }
+
+.btn-main {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--saffron);
+  color: var(--back-deep);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+@media (hover: hover) { .btn-main:hover { background: var(--paper); } }
+.btn-main:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
+
+/* ---------- Une réplique ---------- */
+.turn { margin-top: 22px; }
+.bubble {
+  position: relative;
+  padding: 16px 18px 18px;
+  border-radius: 20px 20px 20px 6px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 30px var(--shadow);
+}
+.bubble.from-g { border-radius: 20px 20px 6px 20px; }
+.who {
+  display: inline-block;
+  padding: .2em .7em;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+.from-o .who { background: var(--odette); }
+.from-g .who { background: var(--gaston); }
+.bubble p { margin: 10px 0 0; font-weight: 700; font-size: 1.32rem; line-height: 1.3; text-wrap: balance; }
+.q { font-family: var(--display); font-weight: 400; }
+.from-o .q { color: var(--odette-ink); }
+.from-g .q { color: var(--gaston-ink); }
+
+.ask { margin: 18px 2px 10px; font-size: 1.05rem; color: var(--edge); }
+.ask b { font-weight: 700; }
+.ask .n-o { color: var(--odette-light); }
+.ask .n-g { color: var(--gaston-light); }
+
+.options { margin: 0; padding: 0; list-style: none; }
+.options li + li { margin-top: 10px; }
+.opt {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: 14px 14px 14px 12px;
+  border-radius: 16px;
+  border: 2px solid var(--line);
+  background: var(--back-deep);
+  color: var(--paper);
+  text-align: left;
+  line-height: 1.35;
+  transition: border-color .15s ease, background .15s ease, opacity .2s ease;
+}
+@media (hover: hover) { .opt:not([disabled]):hover { border-color: var(--saffron); } }
+.opt:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.opt-n {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-right: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: .8rem;
+  line-height: 24px;
+  text-align: center;
+  color: var(--edge);
+}
+.opt-body { flex: 1 1 auto; min-width: 0; }
+.opt-text { display: block; font-size: 1.05rem; }
+.opt .opt-tag { display: none; margin-top: 8px; }
+.answered .opt .opt-tag { display: inline-block; }
+.answered .opt { cursor: default; }
+.answered .opt.is-other { opacity: .62; }
+.opt.is-right { border-color: var(--good); background: #1f4f33; opacity: 1; }
+.opt.is-wrong { border-color: var(--bad); background: #4a2219; opacity: 1; }
+
+.tag {
+  display: inline-block;
+  padding: .18em .6em;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tag-ok { background: var(--good); color: var(--paper); }
+.tag-R, .tag-M, .tag-S, .tag-H { background: rgba(255, 154, 130, .16); color: var(--bad-light); border: 1px solid rgba(255, 154, 130, .5); }
+
+/* ---------- Explication ---------- */
+.feedback {
+  margin-top: 16px;
+  padding: 18px 18px 6px;
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 30px var(--shadow);
+  scroll-margin-top: 130px;
+}
+.verdict { display: inline-flex; align-items: center; padding: .15em .6em .25em .4em; border-radius: 12px; font-family: var(--display); font-size: 1.6rem; line-height: 1.2; }
+.verdict .ico { display: inline-block; width: 1.25em; height: 1.25em; margin-right: .35em; border-radius: 50%; color: var(--paper); font-family: var(--body); font-weight: 700; font-size: .68em; line-height: 1.25em; text-align: center; }
+.ok .verdict { background: var(--good-tint); color: var(--good-ink); }
+.ok .verdict .ico { background: var(--good); }
+.ko .verdict { background: var(--bad-tint); color: var(--bad-ink); }
+.ko .verdict .ico { background: var(--bad); }
+.why { margin: 12px 0 0; font-size: 1.05rem; line-height: 1.45; }
+.good-line { margin: 12px 0 0; padding: .2em 0 .2em .8em; border-left: 3px solid var(--good); font-weight: 700; line-height: 1.4; }
+.gl-k { display: block; margin-bottom: .2em; font-family: var(--mono); font-weight: 500; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--good-ink); }
+.ap { margin: 12px 0 0; padding: 0; list-style: none; }
+.ap li { display: flex; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--rule); line-height: 1.4; }
+.ap-k { flex: none; width: 6.4em; font-family: var(--mono); font-weight: 500; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--good-ink); }
+.feedback .btn-main { margin: 14px 0 12px; }
+
+/* ---------- L'histoire ---------- */
+.story { margin-top: 22px; border-radius: 16px; border: 1px solid var(--line); background: var(--back-deep); }
+.story summary { padding: 14px 16px; cursor: pointer; font-family: var(--mono); font-size: .76rem; letter-spacing: .12em; text-transform: uppercase; color: var(--edge); }
+.story summary:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.lines { margin: 0; padding: 0 16px 14px; list-style: none; }
+.lines li { padding: 8px 0; border-top: 1px solid var(--line); line-height: 1.45; }
+.lines .sp { font-family: var(--mono); font-weight: 500; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; margin-right: .5em; }
+.lines .sp-o { color: var(--odette-light); }
+.lines .sp-g { color: var(--gaston-light); }
+
+/* ---------- Fin ---------- */
+.end { margin-top: 22px; padding: 22px 20px 8px; border-radius: 20px; background: var(--paper); color: var(--ink); box-shadow: 0 12px 30px var(--shadow); }
+.end-label { margin: 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+.end-score { margin: 6px 0 0; font-size: 1.05rem; }
+.end-score b { font-family: var(--display); font-weight: 400; font-size: 3.2rem; line-height: 1; color: var(--good-ink); margin-right: .12em; }
+.end-bad { margin: 4px 0 0; color: var(--bad-ink); }
+.end-msg { margin: 12px 0 0; font-size: 1.08rem; line-height: 1.45; }
+.end h2 { margin: 22px 0 4px; font-family: var(--display); font-weight: 400; font-size: 1.5rem; color: var(--ink); }
+.end-tip { margin: 0 0 8px; font-size: .95rem; color: var(--ink-soft); }
+.end .lines { padding: 0; }
+.end .lines li { border-top-color: var(--rule); }
+.end .sp-o { color: var(--odette-ink); }
+.end .sp-g { color: var(--gaston-ink); }
+.end .btn-main { margin: 18px 0 14px; }
+
+.foot { margin: 28px 0 0; text-align: center; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--edge); }
+
+/* Très petits téléphones (iPhone SE de première génération) */
+@media (max-width: 360px) {
+  .brand-title { font-size: 1.4rem; }
+  .chip { min-width: 54px; margin-left: 6px; padding: 5px 7px 6px; }
+  .chip b { font-size: 1.1rem; }
+  .chip span { font-size: .5rem; }
+  .progress { margin-top: 8px; }
+  .bubble p { font-size: 1.15rem; }
+  .opt { padding: 11px 11px 11px 9px; }
+  .opt-n { margin-right: 9px; }
+  .opt-text { font-size: .98rem; }
+  .feedback { padding: 14px 14px 4px; }
+  .verdict { font-size: 1.35rem; }
+  .why { margin-top: 10px; font-size: .98rem; }
+  .ap li { padding: 4px 0; font-size: .95rem; }
+  .feedback .btn-main { margin: 10px 0 10px; padding: 15px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip.bump { animation: none; }
+  .bar i, .opt { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">
+        <span class="brand-title">Oui, et…</span>
+        <span class="brand-by">© C. Gentil</span>
+      </div>
+      <div class="scores">
+        <div class="chip good" id="chip-good"><b id="n-good">0</b><span id="l-good">bon point</span></div>
+        <div class="chip bad" id="chip-bad"><b id="n-bad">0</b><span id="l-bad">mauvais point</span></div>
+      </div>
+    </div>
+    <div class="progress">
+      <span class="progress-text" id="progress-text">30 répliques</span>
+      <span class="bar" aria-hidden="true"><i id="bar-fill"></i></span>
+    </div>
+  </header>
+
+  <main id="main" aria-live="polite">
+    <section class="intro">
+      <div class="intro-cast" aria-hidden="true"><span class="avatar o">S</span><span class="avatar g">N</span></div>
+      <h1>Oui, et…<br>à Londres</h1>
+      <p class="intro-sub">30 répliques · Sandrine &amp; Nathalie</p>
+      <p class="rule">Deux copines, une voiture de location et un parking souterrain. À chaque réplique, choisissez la réponse qui accepte la proposition de l'autre et ajoute une idée nouvelle.</p>
+      <button class="btn-main" id="start" type="button">Commencer</button>
+    </section>
+  </main>
+
+  <p class="foot">Oui, et… © C. Gentil – 2026</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var START = "Ouf, garées dans le parking souterrain ! Conduire à gauche dans Londres, plus jamais.";
+
+  // Types de réponses
+  var TYPES = {
+    ok: { tag: "Oui, et…", why: "" },
+    R:  { tag: "Refus", why: "Refus : la proposition est niée, l'histoire s'arrête net." },
+    M:  { tag: "Oui, mais", why: "« Oui, mais » : on accepte du bout des lèvres, puis on annule la proposition." },
+    S:  { tag: "Oui sans ajout", why: "Accepté, mais rien de neuf : l'histoire fait du surplace." },
+    H:  { tag: "Hors sujet", why: "Hors sujet : on ignore la proposition pour placer sa propre idée." }
+  };
+
+  // 30 répliques. ok = [réponse qui fait avancer, ce qu'elle accepte, ce qu'elle ajoute] ; d = les trois autres réponses
+  var TURNS = [
+    { ok: ["Et la voiture de location n'a pas une rayure : direction les soldes !", "on est garées à Londres", "la voiture de location intacte et les soldes"],
+      d: [["R", "On n'est pas à Londres, on est à Limoges."], ["M", "D'accord, mais on aurait mieux fait de prendre le train."], ["S", "Oui, on est garées."]] },
+    { ok: ["Je ferme la voiture… Oh non ! Les clés sont tombées dans la grille d'égout.", "on part faire les soldes", "les clés tombent dans la grille d'égout"],
+      d: [["R", "Une rayure ? Regarde le pare-chocs, il est tout cabossé."], ["M", "Oui, mais les soldes, il y a trop de monde, on reste dans la voiture."], ["H", "Tu as pensé à appeler ta mère ?"]] },
+    { ok: ["Pas de panique, j'ai exactement ce qu'il faut dans mon sac à main.", "les clés sont dans la grille", "une solution dans le sac à main"],
+      d: [["R", "Mais non, elles sont dans ta poche."], ["M", "Oui, mais tant pis, on rentre en France à pied."], ["S", "Ah oui. Dans la grille."]] },
+    { ok: ["Une pince-monseigneur ?! En vingt ans d'amitié, tu ne m'as jamais montré ça.", "la solution dans le sac", "c'est une pince-monseigneur, et la surprise de la copine"],
+      d: [["R", "Ton sac est vide, je le vois d'ici."], ["S", "D'accord, tu as quelque chose."], ["M", "Oui, mais ça ne servira à rien, la grille est soudée."]] },
+    { ok: ["C'est un cadeau de mes anciens collègues : avant le yoga, j'étais serrurière.", "la surprise devant la pince-monseigneur", "son passé de serrurière"],
+      d: [["R", "Ce n'est pas une pince-monseigneur, c'est une baguette de pain."], ["M", "Oui, mais je ne sais pas du tout m'en servir."], ["H", "On devrait acheter des scones pour ce soir."]] },
+    { ok: ["Alors vas-y, fais sauter la grille, je fais le guet.", "la copine serrurière", "forcer la grille pendant que l'autre fait le guet"],
+      d: [["R", "Serrurière ? Non, tu as toujours été prof de yoga."], ["S", "Ah, d'accord. Serrurière."], ["M", "Oui, mais c'est interdit d'ouvrir une grille, on va se faire arrêter."]] },
+    { ok: ["Clac, elle est ouverte… et une échelle descend très, très loin.", "forcer la grille", "une échelle très profonde"],
+      d: [["R", "Non, je ne touche pas à cette grille."], ["M", "D'accord, mais elle est trop lourde, je n'y arriverai jamais."], ["S", "Bon. Je force la grille."]] },
+    { ok: ["Je vois nos clés tout en bas : elles tombent encore !", "l'échelle très profonde", "les clés n'ont pas fini de tomber"],
+      d: [["R", "Il n'y a pas d'échelle, c'est un simple trou."], ["M", "Oui, mais je refuse de descendre là-dedans."], ["H", "Tu as vu le prix de l'essence ici ?"]] },
+    { ok: ["On les suit : avec nos sacs de soldes, on descendra plus vite.", "les clés qui tombent", "la descente, chargées de sacs"],
+      d: [["R", "Mais non, elles sont juste là, sur le bord."], ["S", "Oui, elles tombent."], ["M", "Oui, mais on ne les rattrapera jamais, appelons l'agence de location."]] },
+    { ok: ["Plus on descend, plus il fait chaud. J'enlève mon manteau.", "la descente", "la chaleur qui monte"],
+      d: [["R", "Non, on laisse les sacs dans la voiture."], ["M", "D'accord, mais moi je reste en haut."], ["S", "On descend, oui."]] },
+    { ok: ["Normal : un panneau indique “Centre de la Terre : 6 371 kilomètres”.", "la chaleur", "le panneau vers le centre de la Terre"],
+      d: [["R", "Chaud ? Il fait un froid de canard."], ["H", "Au fait, tu as gardé le ticket du parking ?"], ["S", "Oui, il fait chaud."]] },
+    { ok: ["Heureusement, il y a un ascenseur, comme dans le métro de Londres.", "la distance jusqu'au centre", "un ascenseur"],
+      d: [["R", "Il n'y a pas de panneau, tu as trop d'imagination."], ["M", "Oui, mais c'est beaucoup trop loin, on remonte."], ["S", "6 371 kilomètres, d'accord."]] },
+    { ok: ["Et le liftier est une taupe en chapeau melon, très britannique.", "l'ascenseur", "une taupe liftier en chapeau melon"],
+      d: [["R", "Un ascenseur ? Non, c'est une cabine téléphonique."], ["S", "Oui, un ascenseur."], ["M", "Oui, mais il est en panne, évidemment."]] },
+    { ok: ["Elle nous sert une tasse de thé pendant la descente.", "la taupe liftier", "le thé"],
+      d: [["R", "Une taupe ? Non, c'est un monsieur très poilu."], ["M", "Oui, mais j'ai peur des taupes, je prends l'escalier."], ["H", "Il faudra que je rachète du shampoing."]] },
+    { ok: ["Le thé se met à bouillir tout seul : on approche du centre !", "le thé", "il bout, signe qu'on approche"],
+      d: [["R", "Non merci, je ne bois jamais de thé."], ["S", "Oui, du thé."], ["M", "Oui, mais il n'y a pas de lait, je n'en veux pas."]] },
+    { ok: ["Ding ! Terminus. Au centre de la Terre, il y a un immense salon de thé.", "on approche du centre", "l'arrivée dans un salon de thé géant"],
+      d: [["R", "Il ne bout pas, il est tiède."], ["M", "Oui, mais l'ascenseur s'arrête, il faut remonter."], ["S", "On approche, oui."]] },
+    { ok: ["Sur un trône de lave, la Reine des taupes porte nos clés en couronne.", "le salon de thé au centre de la Terre", "la Reine des taupes et ses clés-couronne"],
+      d: [["R", "Il n'y a rien du tout, il fait tout noir."], ["S", "D'accord, un salon de thé."], ["H", "Tu crois que les magasins ferment tard ?"]] },
+    { ok: ["Je lui fais une révérence et je lui offre mon pull à paillettes des soldes.", "la Reine et les clés", "la révérence et le cadeau"],
+      d: [["R", "Ce ne sont pas nos clés, les nôtres ont un porte-clés."], ["M", "Oui, mais on ne parle pas à une reine sans invitation."], ["S", "Oui, elle porte nos clés."]] },
+    { ok: ["Elle l'enfile aussitôt et nous donne une poignée de pépites d'or.", "le pull offert", "les pépites d'or"],
+      d: [["R", "Elle refuse, elle déteste les paillettes."], ["M", "Oui, mais ce pull est bien trop petit pour elle."], ["S", "Oui, tu lui offres ton pull."]] },
+    { ok: ["Et elle nous rend les clés… toutes molles : elles ont fondu !", "l'échange avec la Reine", "les clés rendues, et fondues"],
+      d: [["R", "Ce ne sont pas des pépites, c'est du gravier."], ["S", "Oui, des pépites d'or."], ["H", "On a oublié de fermer la voiture, non ?"]] },
+    { ok: ["Pas grave : avec ma pince-monseigneur, je leur redonne leur forme.", "les clés fondues", "la pince-monseigneur les répare"],
+      d: [["R", "Non, elles sont en parfait état."], ["M", "Oui, mais alors on ne pourra jamais rentrer, c'est fini."], ["S", "Oui, elles ont fondu."]] },
+    { ok: ["Pour remonter, la Reine nous montre le chemin le plus rapide : le volcan.", "les clés réparées", "remonter par le volcan"],
+      d: [["R", "Une pince ne répare pas des clés fondues."], ["S", "D'accord, tu les répares."], ["M", "Oui, mais elles ne marcheront plus jamais."]] },
+    { ok: ["On s'assoit sur une bulle de lave, et le volcan nous recrache vers le ciel !", "le chemin par le volcan", "la bulle de lave et l'éruption"],
+      d: [["R", "Un volcan ? Non, on reprend l'ascenseur."], ["M", "Oui, mais c'est beaucoup trop dangereux, je reste ici."], ["H", "Elle est jolie, sa couronne, tu ne trouves pas ?"]] },
+    { ok: ["Nous survolons toute l'Angleterre, au-dessus des magasins en soldes.", "l'éruption", "le vol au-dessus de l'Angleterre"],
+      d: [["R", "Non, on est toujours assises au fond du volcan."], ["S", "Oui, le volcan nous recrache."], ["M", "Oui, mais on va brûler, il faut descendre de la bulle."]] },
+    { ok: ["Et nous atterrissons pile dans notre voiture de location.", "le vol au-dessus de l'Angleterre", "l'atterrissage dans la voiture"],
+      d: [["R", "On ne vole pas, on est dans le métro."], ["M", "Oui, mais ça ne peut pas durer, on va retomber au centre de la Terre."], ["S", "Oui, on survole l'Angleterre."]] },
+    { ok: ["Je mets la clé un peu tordue… et le moteur démarre du premier coup !", "l'atterrissage dans la voiture", "le démarrage avec la clé tordue"],
+      d: [["R", "Non, on a atterri sur le toit d'un bus."], ["S", "Oui, on est dans la voiture."], ["H", "J'ai tellement faim, pas toi ?"]] },
+    { ok: ["Je te guide : ici, on roule à gauche, et tout doucement.", "la voiture démarre", "le rappel de la conduite à gauche"],
+      d: [["R", "Non, elle ne démarre pas, la batterie est vide."], ["M", "Oui, mais je ne conduis plus, c'est trop stressant."], ["S", "Oui, elle démarre."]] },
+    { ok: ["À la sortie du parking, le gardien nous réclame quarante livres.", "la conduite à gauche", "le gardien du parking et le prix"],
+      d: [["R", "Non, ici on roule à droite, comme en France."], ["S", "D'accord, à gauche."], ["M", "Oui, mais c'est trop compliqué, on laisse la voiture ici."]] },
+    { ok: ["Je le paie avec une pépite d'or. Il nous fait la révérence.", "les quarante livres à payer", "le paiement en pépite d'or"],
+      d: [["R", "Il n'y a pas de gardien, la barrière est ouverte."], ["M", "Oui, mais on n'a pas d'argent anglais, on ne peut pas sortir."], ["H", "Tu as mis ta ceinture ?"]] },
+    { ok: ["Avec la monnaie, on retourne faire les soldes. Et cette fois, c'est moi qui garde les clés !", "le parking payé", "retour aux soldes, la boucle est bouclée"],
+      d: [["R", "Il refuse, il ne prend que la carte bancaire."], ["S", "Oui, tu le paies avec une pépite."], ["M", "Oui, mais c'est beaucoup trop cher payé pour un parking."]] }
+  ];
+
+  var N = TURNS.length;
+  var TRIP = '<ol class="trip" aria-label="La carte de départ"><li><span class="trip-e" aria-hidden="true">🅿️</span>Un parking souterrain</li><li><span class="trip-e" aria-hidden="true">🕳️</span>Une grille d\'égout</li><li><span class="trip-e" aria-hidden="true">🌋</span>Le centre de la Terre</li></ol>';
+
+  function $(id) { return document.getElementById(id); }
+  var main = $("main"), nGood = $("n-good"), nBad = $("n-bad"), lGood = $("l-good"), lBad = $("l-bad"),
+      chipGood = $("chip-good"), chipBad = $("chip-bad"), progressText = $("progress-text"), barFill = $("bar-fill");
+
+  // Typographie française : espaces insécables avant ! ? : ; et dans les guillemets
+  function fr(s) { return String(s).replace(/(\d) (\d{3})/g, "$1\u202f$2").replace(/ ([!?:;»])/g, " $1").replace(/« /g, "« "); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function t(s) { return esc(fr(s)); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function focusEl(el) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+
+  // Qui parle : la réplique de départ est de Sandrine, puis Nathalie et Sandrine alternent
+  function speakerOf(lineIndex) { return lineIndex % 2 === 0 ? "o" : "g"; }   // ligne 0 = départ (Sandrine)
+  function nameOf(k) { return k === "o" ? "Sandrine" : "Nathalie"; }
+  function lineText(lineIndex) { return lineIndex === 0 ? START : TURNS[lineIndex - 1].ok[0]; }
+
+  // État
+  var phase = "intro", turn = 0, good = 0, bad = 0, picked = null, perm = [];
+
+  function shuffledPerm() {
+    var p = [0, 1, 2, 3];
+    for (var i = p.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = p[i]; p[i] = p[j]; p[j] = x; }
+    return p;
+  }
+  // Option n° k de la réplique : 0 = bonne réponse, 1..3 = les autres
+  function option(k) {
+    var T = TURNS[turn];
+    return k === 0 ? { type: "ok", text: T.ok[0] } : { type: T.d[k - 1][0], text: T.d[k - 1][1] };
+  }
+
+  function renderScores() {
+    nGood.textContent = good; nBad.textContent = bad;
+    lGood.textContent = good > 1 ? "bons points" : "bon point";
+    lBad.textContent = bad > 1 ? "mauvais points" : "mauvais point";
+  }
+  function bump(el) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+  chipGood.addEventListener("animationend", function () { chipGood.classList.remove("bump"); });
+  chipBad.addEventListener("animationend", function () { chipBad.classList.remove("bump"); });
+
+  function renderProgress() {
+    var done = phase === "intro" ? 0 : phase === "end" ? N : turn + (picked !== null ? 1 : 0);
+    barFill.style.width = (done / N * 100) + "%";
+    progressText.textContent = phase === "intro" ? N + " répliques" : phase === "end" ? "Histoire terminée" : "Réplique " + (turn + 1) + " / " + N;
+  }
+
+  function storyHtml(upTo) {
+    var out = "";
+    for (var i = 0; i <= upTo; i++) {
+      var k = speakerOf(i);
+      out += '<li><span class="sp sp-' + k + '">' + nameOf(k) + '</span>' + t(lineText(i)) + '</li>';
+    }
+    return out;
+  }
+
+  function quote(s, k) {
+    return '<span class="q" aria-hidden="true">«</span>&nbsp;' + t(s) + '&nbsp;<span class="q" aria-hidden="true">»</span>';
+  }
+
+  function renderIntro() {
+    main.innerHTML =
+      '<section class="intro">' +
+        '<div class="intro-cast" aria-hidden="true"><span class="avatar o">S</span><span class="avatar g">N</span></div>' +
+        '<h1>Oui, et…<br>à Londres</h1>' +
+        '<p class="intro-sub">' + N + ' répliques · Sandrine &amp; Nathalie</p>' +
+        TRIP +
+        '<p class="rule">' + t("Deux copines, une voiture de location et un parking souterrain. À chaque réplique, choisissez la réponse qui accepte la proposition de l'autre et ajoute une idée nouvelle.") + '</p>' +
+        '<ul class="legend">' +
+          '<li><span class="tag tag-ok">Oui, et…</span>' + t("accepte et fait avancer") + '</li>' +
+          '<li><span class="tag tag-R">Refus</span>' + t("nie la proposition") + '</li>' +
+          '<li><span class="tag tag-M">Oui, mais</span>' + t("accepte puis annule") + '</li>' +
+          '<li><span class="tag tag-S">Oui sans ajout</span>' + t("fait du surplace") + '</li>' +
+          '<li><span class="tag tag-H">Hors sujet</span>' + t("ignore la proposition") + '</li>' +
+        '</ul>' +
+        '<button class="btn-main" id="start" type="button">Commencer</button>' +
+      '</section>';
+    $("start").addEventListener("click", start);
+  }
+
+  function renderTurn() {
+    var offerIdx = turn;                 // la réplique reçue
+    var from = speakerOf(offerIdx), to = speakerOf(offerIdx + 1);
+    var answered = picked !== null;
+    var opts = "";
+    for (var n = 0; n < 4; n++) {
+      var k = perm[n], o = option(k);
+      var cls = "opt";
+      if (answered) cls += k === 0 ? " is-right" : (k === picked ? " is-wrong" : " is-other");
+      opts += '<li><button class="' + cls + '" type="button" data-k="' + k + '"' + (answered ? " disabled" : "") + '>' +
+        '<span class="opt-n" aria-hidden="true">' + (n + 1) + '</span>' +
+        '<span class="opt-body"><span class="opt-text">«&nbsp;' + t(o.text) + '&nbsp;»</span>' +
+        '<span class="opt-tag tag tag-' + o.type + '">' + esc(TYPES[o.type].tag) + '</span></span>' +
+      '</button></li>';
+    }
+
+    var fb = "";
+    if (answered) {
+      var T = TURNS[turn], ok = picked === 0, last = turn === N - 1;
+      fb = '<div class="feedback ' + (ok ? "ok" : "ko") + '" id="feedback" tabindex="-1">' +
+        '<div class="verdict"><span class="ico" aria-hidden="true">' + (ok ? "✓" : "✗") + '</span>' + (ok ? "Bien vu&nbsp;!" : "Raté&nbsp;!") + '</div>' +
+        (ok ? "" : '<p class="why">' + t(TYPES[option(picked).type].why) + '</p>' +
+                   '<p class="good-line"><span class="gl-k">La réponse qui fait avancer</span>«&nbsp;' + t(T.ok[0]) + '&nbsp;»</p>') +
+        '<ul class="ap">' +
+          '<li><span class="ap-k">✓ Accepte</span><span>' + t(cap(T.ok[1])) + '</span></li>' +
+          '<li><span class="ap-k">+ Ajoute</span><span>' + t(cap(T.ok[2])) + '</span></li>' +
+        '</ul>' +
+        '<button class="btn-main" id="next" type="button">' + (last ? "Voir toute l'histoire" : "Réplique suivante") + '</button>' +
+      '</div>';
+    }
+
+    main.innerHTML =
+      '<section class="turn' + (answered ? " answered" : "") + '">' +
+        '<div class="bubble from-' + from + '"><span class="who">' + nameOf(from) + '</span><p>' + quote(lineText(offerIdx)) + '</p></div>' +
+        '<p class="ask">' + (answered ? "Réponse de " : "Que répond ") + '<b class="n-' + to + '">' + nameOf(to) + '</b>' + (answered ? "" : "&nbsp;?") + '</p>' +
+        '<ol class="options">' + opts + '</ol>' +
+        fb +
+      '</section>' +
+      '<details class="story"><summary>' + t("L'histoire jusqu'ici · " + (turn + 1) + (turn + 1 > 1 ? " répliques" : " réplique")) + '</summary>' +
+        '<ol class="lines">' + storyHtml(turn) + '</ol></details>';
+
+    var btns = main.querySelectorAll(".opt");
+    for (var b = 0; b < btns.length; b++) {
+      btns[b].addEventListener("click", function () { choose(parseInt(this.getAttribute("data-k"), 10)); });
+    }
+    var next = $("next");
+    if (next) next.addEventListener("click", nextTurn);
+  }
+
+  function renderEnd() {
+    var msg;
+    if (good >= N - 3) msg = "Vous acceptez et vous relancez comme un improvisateur aguerri.";
+    else if (good >= Math.round(N * 0.66)) msg = "Belle écoute. Repérez les « Oui, mais » et les « Oui » sans ajout qui vous ont piégé.";
+    else msg = "Relisez l'histoire à voix haute, puis rejouez : chaque bonne réponse accepte une chose et en ajoute une autre.";
+    main.innerHTML =
+      '<section class="end">' +
+        '<p class="end-label">Histoire terminée</p>' +
+        '<p class="end-score"><b>' + good + '</b> ' + (good > 1 ? "bons points" : "bon point") + ' sur ' + N + '</p>' +
+        '<p class="end-bad">' + bad + (bad > 1 ? " mauvais points" : " mauvais point") + '</p>' +
+        '<p class="end-msg">' + t(msg) + '</p>' +
+        '<h2>' + t("L'histoire complète") + '</h2>' +
+        '<p class="end-tip">' + t("À lire à deux voix : l'une est Sandrine, l'autre Nathalie.") + '</p>' +
+        '<ol class="lines">' + storyHtml(N) + '</ol>' +
+        '<button class="btn-main" id="replay" type="button">Rejouer</button>' +
+      '</section>';
+    $("replay").addEventListener("click", restart);
+  }
+
+  function render() {
+    renderScores();
+    renderProgress();
+    if (phase === "intro") renderIntro();
+    else if (phase === "play") renderTurn();
+    else renderEnd();
+  }
+
+  function scrollTopNow() { try { window.scrollTo(0, 0); } catch (e) {} }
+
+  function start() {
+    phase = "play"; turn = 0; good = 0; bad = 0; picked = null; perm = shuffledPerm();
+    render();
+    scrollTopNow();
+    var first = main.querySelector(".opt"); if (first) focusEl(first);
+  }
+
+  function choose(k) {
+    if (phase !== "play" || picked !== null) return;
+    picked = k;
+    if (k === 0) { good++; bump(chipGood); } else { bad++; bump(chipBad); }
+    render();
+    var fbEl = $("feedback"), nx = $("next");
+    if (fbEl && nx) {
+      // L'explication s'affiche sous le bandeau ; si elle est trop haute (petit écran), on s'assure de voir le bouton
+      var head = document.querySelector(".top").offsetHeight;
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var fr = fbEl.getBoundingClientRect(), nr = nx.getBoundingClientRect();
+      var target = fr.height <= window.innerHeight - head - 24
+        ? y + fr.top - head - 12
+        : y + nr.bottom - window.innerHeight + 16;
+      try { window.scrollTo({ top: target, behavior: "smooth" }); } catch (e) { window.scrollTo(0, target); }
+      focusEl(nx);
+    }
+  }
+
+  function nextTurn() {
+    if (phase !== "play" || picked === null) return;
+    if (turn >= N - 1) { phase = "end"; picked = null; render(); scrollTopNow(); return; }
+    turn++; picked = null; perm = shuffledPerm();
+    render();
+    scrollTopNow();
+    var first = main.querySelector(".opt"); if (first) focusEl(first);
+  }
+
+  function restart() { start(); }
+
+  document.addEventListener("keydown", function (e) {
+    if (phase === "play" && picked === null && /^[1-4]$/.test(e.key)) {
+      e.preventDefault();
+      choose(perm[parseInt(e.key, 10) - 1]);
+    }
+  });
+
+  render();
+
+  // Si la page est mise à jour pendant une partie, on retrouve la partie en cours
+  function restore(data) {
+    if (!data || phase !== "intro") return;
+    if (["play", "end"].indexOf(data.phase) < 0 || typeof data.turn !== "number") return;
+    var okPerm = Object.prototype.toString.call(data.perm) === "[object Array]" && data.perm.length === 4;
+    phase = data.phase;
+    turn = Math.min(Math.max(Math.floor(data.turn), 0), N - 1);
+    good = typeof data.good === "number" ? data.good : 0;
+    bad = typeof data.bad === "number" ? data.bad : 0;
+    picked = typeof data.picked === "number" && data.picked >= 0 && data.picked <= 3 ? data.picked : null;
+    perm = okPerm ? data.perm.slice() : shuffledPerm();
+    render();
+  }
+  try {
+    var hot = window.claude && window.claude.hot;
+    if (hot && typeof hot.snapshot === "function") {
+      hot.snapshot(function () { return { phase: phase, turn: turn, good: good, bad: bad, picked: picked, perm: perm }; });
+    }
+    if (hot && typeof hot.ready === "function") hot.ready(restore);
+    else if (hot && hot.data) restore(hot.data);
+  } catch (err) {}
+})();
+</script>
+</body>
+</html>
