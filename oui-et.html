@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Oui, et… : 30 répliques à choisir pour faire avancer une histoire qui déraille complètement, avec score et explications.">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Oui, et…</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=Shrikhand&display=swap">
+<style>
+/* Mise en page : une colonne de téléphone qui défile. En haut le sigle et les deux compteurs (fixés),
+   puis la réplique reçue dans une bulle, les quatre réponses possibles, et l'explication après chaque choix.
+   L'histoire complète se déplie sous le jeu, puis s'affiche en entier à la fin.
+   Même famille que les autres jeux de l'atelier : fond vert sapin, accents safran, cartes papier.
+   Look unique, indépendant du thème. CSS compatible avec les anciens iPhone (pas de inset, color-mix, aspect-ratio). */
+:root {
+  --table: #0b1912;
+  --table-glow: #1d3b2b;
+  --back: #2c6e4f;
+  --back-deep: #163a29;
+  --line: rgba(234, 244, 238, .22);
+  --saffron: #f2b134;
+  --paper: #f8faf8;
+  --edge: #d7e5dc;
+  --ink: #16241c;
+  --ink-soft: #4d5f55;
+  --rule: #dfe8e2;
+  --shadow: rgba(2, 8, 5, .5);
+
+  --good: #3c9057;  --good-ink: #2a6c3f;  --good-light: #8fe0aa;  --good-tint: rgba(60, 144, 87, .14);
+  --bad: #e0543a;   --bad-ink: #b13a22;   --bad-light: #ff9a82;   --bad-tint: rgba(224, 84, 58, .13);
+
+  --odette: #d9508d; --odette-ink: #ad2f68; --odette-light: #ff9cc6;
+  --gaston: #17909d; --gaston-ink: #0d6b75; --gaston-light: #7fd6df;
+
+  --display: "Shrikhand", Georgia, serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html { box-sizing: border-box; background: var(--table); -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--table);
+  background-image: radial-gradient(ellipse 90% 50% at 50% 20%, var(--table-glow), var(--table));
+  background-attachment: fixed;
+  color: var(--paper);
+  font-family: var(--body);
+  font-size: 16px;
+}
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
+
+/* ---------- Bandeau : sigle et compteurs ---------- */
+.top {
+  position: -webkit-sticky;
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  margin: 0 -16px;
+  padding: 10px 16px 10px;
+  background: var(--table);
+  border-bottom: 1px solid var(--line);
+}
+.top-row { display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; flex-direction: column; margin-right: 12px; }
+.brand-title { font-family: var(--display); color: var(--saffron); font-size: 1.75rem; line-height: 1; }
+.brand-by { margin-top: 5px; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--edge); }
+.scores { display: flex; }
+.chip { min-width: 66px; margin-left: 8px; padding: 6px 10px 7px; border-radius: 12px; background: var(--back-deep); text-align: center; line-height: 1.1; }
+.chip b { display: block; font-family: var(--mono); font-weight: 500; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.chip span { display: block; margin-top: 2px; font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--edge); }
+.chip.good { border: 1px solid var(--good); }
+.chip.good b { color: var(--good-light); }
+.chip.bad { border: 1px solid var(--bad); }
+.chip.bad b { color: var(--bad-light); }
+.chip.bump { animation: bump .45s ease; }
+@keyframes bump { 0%, 100% { transform: none; } 40% { transform: scale(1.14); } }
+
+.progress { margin-top: 10px; display: flex; align-items: center; }
+.progress-text { flex: none; min-width: 9em; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--edge); font-variant-numeric: tabular-nums; }
+.bar { flex: 1; height: 6px; border-radius: 3px; background: var(--back-deep); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--saffron); transition: width .35s ease; }
+
+/* ---------- Écran d'accueil ---------- */
+.intro {
+  margin-top: 22px;
+  padding: 26px 22px 24px;
+  border-radius: 20px;
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(242, 177, 52, .14) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(-45deg, rgba(242, 177, 52, .14) 0 2px, transparent 2px 22px);
+  border: 2px solid var(--saffron);
+  text-align: center;
+}
+.intro-cast { display: flex; justify-content: center; margin-bottom: 16px; }
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-family: var(--display);
+  font-size: 1.6rem;
+  color: var(--paper);
+  border: 3px solid var(--paper);
+}
+.avatar + .avatar { margin-left: -10px; }
+.avatar.o { background: var(--odette); }
+.avatar.g { background: var(--gaston); }
+.intro h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 2.2rem; line-height: 1.1; color: var(--saffron); }
+.intro-sub { margin: 6px 0 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--paper); }
+.intro p.rule { max-width: 34ch; margin: 18px auto 0; font-size: 1.08rem; line-height: 1.5; text-wrap: balance; }
+.legend { margin: 18px auto 0; padding: 0; list-style: none; max-width: 30ch; text-align: left; font-size: .95rem; line-height: 1.4; }
+.legend li { display: flex; align-items: baseline; padding: 3px 0; }
+.legend .tag { flex: none; margin-right: 10px; }
+
+.btn-main {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--saffron);
+  color: var(--back-deep);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+@media (hover: hover) { .btn-main:hover { background: var(--paper); } }
+.btn-main:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
+
+/* ---------- Une réplique ---------- */
+.turn { margin-top: 22px; }
+.bubble {
+  position: relative;
+  padding: 16px 18px 18px;
+  border-radius: 20px 20px 20px 6px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 30px var(--shadow);
+}
+.bubble.from-g { border-radius: 20px 20px 6px 20px; }
+.who {
+  display: inline-block;
+  padding: .2em .7em;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+.from-o .who { background: var(--odette); }
+.from-g .who { background: var(--gaston); }
+.bubble p { margin: 10px 0 0; font-weight: 700; font-size: 1.32rem; line-height: 1.3; text-wrap: balance; }
+.q { font-family: var(--display); font-weight: 400; }
+.from-o .q { color: var(--odette-ink); }
+.from-g .q { color: var(--gaston-ink); }
+
+.ask { margin: 18px 2px 10px; font-size: 1.05rem; color: var(--edge); }
+.ask b { font-weight: 700; }
+.ask .n-o { color: var(--odette-light); }
+.ask .n-g { color: var(--gaston-light); }
+
+.options { margin: 0; padding: 0; list-style: none; }
+.options li + li { margin-top: 10px; }
+.opt {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: 14px 14px 14px 12px;
+  border-radius: 16px;
+  border: 2px solid var(--line);
+  background: var(--back-deep);
+  color: var(--paper);
+  text-align: left;
+  line-height: 1.35;
+  transition: border-color .15s ease, background .15s ease, opacity .2s ease;
+}
+@media (hover: hover) { .opt:not([disabled]):hover { border-color: var(--saffron); } }
+.opt:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.opt-n {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-right: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: .8rem;
+  line-height: 24px;
+  text-align: center;
+  color: var(--edge);
+}
+.opt-body { flex: 1 1 auto; min-width: 0; }
+.opt-text { display: block; font-size: 1.05rem; }
+.opt .opt-tag { display: none; margin-top: 8px; }
+.answered .opt .opt-tag { display: inline-block; }
+.answered .opt { cursor: default; }
+.answered .opt.is-other { opacity: .62; }
+.opt.is-right { border-color: var(--good); background: #1f4f33; opacity: 1; }
+.opt.is-wrong { border-color: var(--bad); background: #4a2219; opacity: 1; }
+
+.tag {
+  display: inline-block;
+  padding: .18em .6em;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tag-ok { background: var(--good); color: var(--paper); }
+.tag-R, .tag-M, .tag-S, .tag-H { background: rgba(255, 154, 130, .16); color: var(--bad-light); border: 1px solid rgba(255, 154, 130, .5); }
+
+/* ---------- Explication ---------- */
+.feedback {
+  margin-top: 16px;
+  padding: 18px 18px 6px;
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 30px var(--shadow);
+  scroll-margin-top: 130px;
+}
+.verdict { display: inline-flex; align-items: center; padding: .15em .6em .25em .4em; border-radius: 12px; font-family: var(--display); font-size: 1.6rem; line-height: 1.2; }
+.verdict .ico { display: inline-block; width: 1.25em; height: 1.25em; margin-right: .35em; border-radius: 50%; color: var(--paper); font-family: var(--body); font-weight: 700; font-size: .68em; line-height: 1.25em; text-align: center; }
+.ok .verdict { background: var(--good-tint); color: var(--good-ink); }
+.ok .verdict .ico { background: var(--good); }
+.ko .verdict { background: var(--bad-tint); color: var(--bad-ink); }
+.ko .verdict .ico { background: var(--bad); }
+.why { margin: 12px 0 0; font-size: 1.05rem; line-height: 1.45; }
+.good-line { margin: 12px 0 0; padding: .2em 0 .2em .8em; border-left: 3px solid var(--good); font-weight: 700; line-height: 1.4; }
+.gl-k { display: block; margin-bottom: .2em; font-family: var(--mono); font-weight: 500; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--good-ink); }
+.ap { margin: 12px 0 0; padding: 0; list-style: none; }
+.ap li { display: flex; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--rule); line-height: 1.4; }
+.ap-k { flex: none; width: 6.4em; font-family: var(--mono); font-weight: 500; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--good-ink); }
+.feedback .btn-main { margin: 14px 0 12px; }
+
+/* ---------- L'histoire ---------- */
+.story { margin-top: 22px; border-radius: 16px; border: 1px solid var(--line); background: var(--back-deep); }
+.story summary { padding: 14px 16px; cursor: pointer; font-family: var(--mono); font-size: .76rem; letter-spacing: .12em; text-transform: uppercase; color: var(--edge); }
+.story summary:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.lines { margin: 0; padding: 0 16px 14px; list-style: none; }
+.lines li { padding: 8px 0; border-top: 1px solid var(--line); line-height: 1.45; }
+.lines .sp { font-family: var(--mono); font-weight: 500; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; margin-right: .5em; }
+.lines .sp-o { color: var(--odette-light); }
+.lines .sp-g { color: var(--gaston-light); }
+
+/* ---------- Fin ---------- */
+.end { margin-top: 22px; padding: 22px 20px 8px; border-radius: 20px; background: var(--paper); color: var(--ink); box-shadow: 0 12px 30px var(--shadow); }
+.end-label { margin: 0; font-family: var(--mono); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+.end-score { margin: 6px 0 0; font-size: 1.05rem; }
+.end-score b { font-family: var(--display); font-weight: 400; font-size: 3.2rem; line-height: 1; color: var(--good-ink); margin-right: .12em; }
+.end-bad { margin: 4px 0 0; color: var(--bad-ink); }
+.end-msg { margin: 12px 0 0; font-size: 1.08rem; line-height: 1.45; }
+.end h2 { margin: 22px 0 4px; font-family: var(--display); font-weight: 400; font-size: 1.5rem; color: var(--ink); }
+.end-tip { margin: 0 0 8px; font-size: .95rem; color: var(--ink-soft); }
+.end .lines { padding: 0; }
+.end .lines li { border-top-color: var(--rule); }
+.end .sp-o { color: var(--odette-ink); }
+.end .sp-g { color: var(--gaston-ink); }
+.end .btn-main { margin: 18px 0 14px; }
+
+.foot { margin: 28px 0 0; text-align: center; font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--edge); }
+
+/* Très petits téléphones (iPhone SE de première génération) */
+@media (max-width: 360px) {
+  .brand-title { font-size: 1.4rem; }
+  .chip { min-width: 54px; margin-left: 6px; padding: 5px 7px 6px; }
+  .chip b { font-size: 1.1rem; }
+  .chip span { font-size: .5rem; }
+  .progress { margin-top: 8px; }
+  .bubble p { font-size: 1.15rem; }
+  .opt { padding: 11px 11px 11px 9px; }
+  .opt-n { margin-right: 9px; }
+  .opt-text { font-size: .98rem; }
+  .feedback { padding: 14px 14px 4px; }
+  .verdict { font-size: 1.35rem; }
+  .why { margin-top: 10px; font-size: .98rem; }
+  .ap li { padding: 4px 0; font-size: .95rem; }
+  .feedback .btn-main { margin: 10px 0 10px; padding: 15px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip.bump { animation: none; }
+  .bar i, .opt { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">
+        <span class="brand-title">Oui, et…</span>
+        <span class="brand-by">© C. Gentil</span>
+      </div>
+      <div class="scores">
+        <div class="chip good" id="chip-good"><b id="n-good">0</b><span id="l-good">bon point</span></div>
+        <div class="chip bad" id="chip-bad"><b id="n-bad">0</b><span id="l-bad">mauvais point</span></div>
+      </div>
+    </div>
+    <div class="progress">
+      <span class="progress-text" id="progress-text">30 répliques</span>
+      <span class="bar" aria-hidden="true"><i id="bar-fill"></i></span>
+    </div>
+  </header>
+
+  <main id="main" aria-live="polite">
+    <section class="intro">
+      <div class="intro-cast" aria-hidden="true"><span class="avatar o">O</span><span class="avatar g">G</span></div>
+      <h1>L'histoire qui déraille</h1>
+      <p class="intro-sub">30 répliques · Odette &amp; Gaston</p>
+      <p class="rule">Odette et Gaston attendent le bus. À chaque réplique, choisissez la réponse qui accepte la proposition de l'autre et ajoute une idée nouvelle.</p>
+      <button class="btn-main" id="start" type="button">Commencer</button>
+    </section>
+  </main>
+
+  <p class="foot">Oui, et… © C. Gentil – 2026</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var START = "Le bus a encore vingt minutes de retard.";
+
+  // Types de réponses
+  var TYPES = {
+    ok: { tag: "Oui, et…", why: "" },
+    R:  { tag: "Refus", why: "Refus : la proposition est niée, l'histoire s'arrête net." },
+    M:  { tag: "Oui, mais", why: "« Oui, mais » : on accepte du bout des lèvres, puis on annule la proposition." },
+    S:  { tag: "Oui sans ajout", why: "Accepté, mais rien de neuf : l'histoire fait du surplace." },
+    H:  { tag: "Hors sujet", why: "Hors sujet : on ignore la proposition pour placer sa propre idée." }
+  };
+
+  // 30 répliques. ok = [réponse qui fait avancer, ce qu'elle accepte, ce qu'elle ajoute] ; d = les trois autres réponses
+  var TURNS = [
+    { ok: ["Je sais : le chauffeur vient de m'envoyer un pigeon voyageur pour s'excuser.", "le bus est en retard", "un pigeon apporte des excuses"],
+      d: [["R", "Non, il est à l'heure, c'est ta montre qui avance."], ["M", "D'accord, sauf qu'aujourd'hui je vais à pied."], ["S", "Ah oui. Vingt minutes."]] },
+    { ok: ["Ce pigeon porte une minuscule casquette de chauffeur de bus.", "le pigeon voyageur", "sa casquette de chauffeur"],
+      d: [["R", "Un pigeon ? N'importe quoi, c'est un SMS."], ["M", "Oui, mais les pigeons, ça ne sait pas lire."], ["H", "Au fait, tu as pensé à acheter du pain ?"]] },
+    { ok: ["Évidemment : c'est lui qui conduit le bus aujourd'hui.", "la casquette de chauffeur", "le pigeon conduit le bus"],
+      d: [["R", "Non, c'est un chapeau de cotillon."], ["S", "Oui, une petite casquette."], ["M", "Oui, mais ça ne veut rien dire, tout le monde peut porter une casquette."]] },
+    { ok: ["Ça explique pourquoi le bus arrive en volant au-dessus de l'église !", "le pigeon conduit", "le bus vole"],
+      d: [["R", "Impossible, un pigeon n'a pas le permis."], ["M", "Oui, mais alors moi, je ne monte pas."], ["S", "D'accord."]] },
+    { ok: ["Il se pose sur le toit de l'abribus en battant ses ailes en carton.", "le bus qui vole", "l'atterrissage et les ailes en carton"],
+      d: [["R", "Mais non, c'est un avion, le bus est encore loin."], ["S", "C'est vrai, il vole."], ["H", "Il fait froid ce matin, tu ne trouves pas ?"]] },
+    { ok: ["Montons vite : la porte est un toboggan qui mène directement aux sièges !", "le bus est posé sur l'abribus", "une porte-toboggan"],
+      d: [["R", "Non, il est reparti sans nous."], ["M", "Oui, mais le toit va s'écrouler, partons d'ici."], ["S", "Bon. Il est posé."]] },
+    { ok: ["Les sièges sont des transats, et on nous sert des chocolats chauds.", "le toboggan vers les sièges", "des transats et du chocolat chaud"],
+      d: [["R", "Un toboggan ? Il n'y a qu'une porte normale."], ["M", "D'accord, mais je passe par l'escalier, j'ai le vertige."], ["H", "Tu as ton ticket ? Moi, j'ai perdu le mien."]] },
+    { ok: ["C'est une girafe qui les sert, elle passe la tête par le toit ouvrant.", "le service de chocolats", "une girafe hôtesse"],
+      d: [["R", "Non, c'est un bus normal, avec des sièges normaux."], ["S", "Oui, des transats. C'est confortable."], ["M", "Oui, mais le chocolat est froid, je n'en veux pas."]] },
+    { ok: ["Elle annonce que le prochain arrêt est la Lune.", "la girafe hôtesse", "la destination : la Lune"],
+      d: [["R", "Une girafe ? Tu as rêvé, c'est un lampadaire."], ["M", "Oui, mais elle n'a rien à faire là, il faut appeler le zoo."], ["H", "Moi, je descends à la mairie."]] },
+    { ok: ["Tant mieux, j'ai mon scaphandre dans mon sac de courses.", "le voyage vers la Lune", "un scaphandre dans le sac de courses"],
+      d: [["R", "La Lune ? Non, elle a dit la mairie."], ["M", "Oui, mais on n'a pas de combinaison, on ne peut pas y aller."], ["S", "Ah. La Lune."]] },
+    { ok: ["Et moi, j'ai un parapluie anti-météorites. Ça suffira.", "l'équipement spatial", "le parapluie anti-météorites"],
+      d: [["R", "C'est un sac de poireaux, pas un scaphandre."], ["S", "Très bien, tu as ton scaphandre."], ["M", "Oui, mais il est troué, il ne sert à rien."]] },
+    { ok: ["Ouvre-le vite : il pleut des étoiles filantes sur le pare-brise !", "le parapluie", "une pluie d'étoiles filantes"],
+      d: [["R", "Ça n'existe pas, les parapluies anti-météorites."], ["M", "D'accord, mais il ne s'ouvre pas, il est cassé."], ["H", "Il faudrait prévenir ta sœur qu'on rentrera tard."]] },
+    { ok: ["Le pigeon fait un looping pour les éviter… et nous voilà sur la Lune !", "les étoiles filantes", "le looping et l'arrivée sur la Lune"],
+      d: [["R", "Non, ce sont juste des gouttes de pluie."], ["S", "Oui, il y en a beaucoup."], ["M", "Oui, mais c'est trop dangereux, il faut faire demi-tour."]] },
+    { ok: ["Le sol est tout mou… La Lune est vraiment en fromage !", "l'arrivée sur la Lune", "la Lune est en fromage"],
+      d: [["R", "Mais non, on est toujours à l'arrêt de bus."], ["M", "Oui, mais il n'y a rien à voir ici, rentrons."], ["S", "Voilà. La Lune."]] },
+    { ok: ["Du comté, même ! Et des habitants arrivent avec des couteaux à fromage.", "la Lune en fromage", "des habitants armés de couteaux à fromage"],
+      d: [["R", "C'est de la poussière, pas du fromage."], ["S", "Oui, c'est du fromage."], ["H", "Il faut que je pense à rappeler mon dentiste."]] },
+    { ok: ["Ce ne sont pas des armes : ils nous invitent au grand concours de fondue.", "les habitants et leurs couteaux", "un concours de fondue"],
+      d: [["R", "Non, il n'y a personne, la Lune est déserte."], ["M", "Oui, mais on remonte dans le bus et on rentre chez nous."], ["S", "Oui, ils ont des couteaux."]] },
+    { ok: ["Et nous sommes membres du jury, puisque nous venons de la Terre.", "le concours de fondue", "ils deviennent jurés"],
+      d: [["R", "Un concours ? Non, c'est une manifestation."], ["M", "D'accord, mais je déteste la fondue, je ne participe pas."], ["H", "Tu crois que le bus va nous attendre ?"]] },
+    { ok: ["Le premier candidat est une fondue qui chante de l'opéra.", "le jury", "une fondue chanteuse d'opéra"],
+      d: [["R", "Non, nous sommes de simples spectateurs."], ["S", "Oui, nous sommes le jury."], ["M", "Oui, mais je n'y connais rien, je laisse ma place."]] },
+    { ok: ["Elle chante si fort que le bus se remet à voler tout seul !", "la fondue chanteuse", "le bus s'envole sans eux"],
+      d: [["R", "Une fondue ne chante pas, c'est le micro qui grésille."], ["M", "Oui, mais elle chante faux, on la disqualifie et on s'en va."], ["S", "C'est vrai, elle chante."]] },
+    { ok: ["Vite, rattrapons-le en nous servant de la girafe comme lasso !", "le bus qui s'envole", "la girafe sert de lasso"],
+      d: [["R", "Non, il est garé, il n'a pas bougé."], ["S", "Oh, le bus s'en va."], ["H", "Bon, et qui a gagné le concours ?"]] },
+    { ok: ["La girafe veut bien, si on lui offre le trophée du concours.", "le lasso-girafe", "elle réclame le trophée"],
+      d: [["R", "Laisse la girafe tranquille, on prendra le prochain bus."], ["M", "Oui, mais son cou est trop court, ça ne marchera jamais."], ["S", "D'accord, la girafe."]] },
+    { ok: ["Le trophée, c'est une théière magique qui exauce un vœu.", "le trophée pour la girafe", "une théière qui exauce un vœu"],
+      d: [["R", "Il n'y a pas de trophée, le concours est annulé."], ["S", "D'accord, on lui donne le trophée."], ["M", "Oui, mais le trophée est à nous, on le garde."]] },
+    { ok: ["Alors je fais le vœu d'arriver au bureau à l'heure !", "la théière magique", "le vœu d'arriver à l'heure"],
+      d: [["R", "Les théières magiques, ça n'existe pas."], ["M", "Oui, mais il ne faut jamais faire de vœu, c'est trop risqué."], ["H", "Tu sais que je préfère le café ?"]] },
+    { ok: ["La théière éternue, et nous voilà dans le hall du bureau… en pyjama !", "le vœu", "l'éternuement et l'arrivée en pyjama"],
+      d: [["R", "Trop tard, la théière est vide."], ["S", "Joli vœu."], ["M", "Oui, mais ce genre de vœu ne marche jamais."]] },
+    { ok: ["Aucun problème : c'est la journée pyjama, c'est écrit sur un mémo.", "l'arrivée en pyjama", "la journée pyjama et un mémo"],
+      d: [["R", "Non, on est en costume, comme d'habitude."], ["M", "Oui, mais je rentre me changer, j'ai trop honte."], ["S", "En pyjama, oui."]] },
+    { ok: ["Le mémo est signé par le nouveau directeur… le pigeon !", "le mémo", "le pigeon est devenu directeur"],
+      d: [["R", "Il n'y a pas de mémo, la porte est vide."], ["S", "D'accord, un mémo."], ["H", "Il faut que je passe à la machine à café."]] },
+    { ok: ["Il nous convoque en réunion, et c'est la girafe qui prend des notes.", "le pigeon directeur", "une réunion avec la girafe secrétaire"],
+      d: [["R", "C'est impossible, le directeur, c'est Mme Duval."], ["M", "Oui, mais je démissionne tout de suite."], ["S", "Ah, c'est le pigeon."]] },
+    { ok: ["Premier point à l'ordre du jour : les retards du bus.", "la réunion", "l'ordre du jour"],
+      d: [["R", "Non, la réunion est annulée."], ["S", "D'accord, une réunion."], ["H", "Quelqu'un a vu mes lunettes ?"]] },
+    { ok: ["Le pigeon décide que désormais, le bus partira de la Lune.", "les retards du bus", "le bus partira de la Lune"],
+      d: [["R", "Mais non, le bus n'a jamais de retard."], ["M", "Oui, mais on n'y peut rien, passons au point suivant."], ["S", "Oui, les retards."]] },
+    { ok: ["Parfait : comme ça, il n'aura plus que vingt minutes de retard.", "le bus partira de la Lune", "la boucle est bouclée : vingt minutes de retard"],
+      d: [["R", "Ridicule, le bus restera à la gare routière."], ["M", "Oui, mais moi, je prendrai mon vélo."], ["S", "D'accord, de la Lune."]] }
+  ];
+
+  var N = TURNS.length;
+
+  function $(id) { return document.getElementById(id); }
+  var main = $("main"), nGood = $("n-good"), nBad = $("n-bad"), lGood = $("l-good"), lBad = $("l-bad"),
+      chipGood = $("chip-good"), chipBad = $("chip-bad"), progressText = $("progress-text"), barFill = $("bar-fill");
+
+  // Typographie française : espaces insécables avant ! ? : ; et dans les guillemets
+  function fr(s) { return String(s).replace(/ ([!?:;»])/g, " $1").replace(/« /g, "« "); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function t(s) { return esc(fr(s)); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function focusEl(el) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+
+  // Qui parle : la réplique de départ est d'Odette, puis Gaston et Odette alternent
+  function speakerOf(lineIndex) { return lineIndex % 2 === 0 ? "o" : "g"; }   // ligne 0 = départ (Odette)
+  function nameOf(k) { return k === "o" ? "Odette" : "Gaston"; }
+  function lineText(lineIndex) { return lineIndex === 0 ? START : TURNS[lineIndex - 1].ok[0]; }
+
+  // État
+  var phase = "intro", turn = 0, good = 0, bad = 0, picked = null, perm = [];
+
+  function shuffledPerm() {
+    var p = [0, 1, 2, 3];
+    for (var i = p.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = p[i]; p[i] = p[j]; p[j] = x; }
+    return p;
+  }
+  // Option n° k de la réplique : 0 = bonne réponse, 1..3 = les autres
+  function option(k) {
+    var T = TURNS[turn];
+    return k === 0 ? { type: "ok", text: T.ok[0] } : { type: T.d[k - 1][0], text: T.d[k - 1][1] };
+  }
+
+  function renderScores() {
+    nGood.textContent = good; nBad.textContent = bad;
+    lGood.textContent = good > 1 ? "bons points" : "bon point";
+    lBad.textContent = bad > 1 ? "mauvais points" : "mauvais point";
+  }
+  function bump(el) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+  chipGood.addEventListener("animationend", function () { chipGood.classList.remove("bump"); });
+  chipBad.addEventListener("animationend", function () { chipBad.classList.remove("bump"); });
+
+  function renderProgress() {
+    var done = phase === "intro" ? 0 : phase === "end" ? N : turn + (picked !== null ? 1 : 0);
+    barFill.style.width = (done / N * 100) + "%";
+    progressText.textContent = phase === "intro" ? N + " répliques" : phase === "end" ? "Histoire terminée" : "Réplique " + (turn + 1) + " / " + N;
+  }
+
+  function storyHtml(upTo) {
+    var out = "";
+    for (var i = 0; i <= upTo; i++) {
+      var k = speakerOf(i);
+      out += '<li><span class="sp sp-' + k + '">' + nameOf(k) + '</span>' + t(lineText(i)) + '</li>';
+    }
+    return out;
+  }
+
+  function quote(s, k) {
+    return '<span class="q" aria-hidden="true">«</span>&nbsp;' + t(s) + '&nbsp;<span class="q" aria-hidden="true">»</span>';
+  }
+
+  function renderIntro() {
+    main.innerHTML =
+      '<section class="intro">' +
+        '<div class="intro-cast" aria-hidden="true"><span class="avatar o">O</span><span class="avatar g">G</span></div>' +
+        '<h1>L\'histoire qui déraille</h1>' +
+        '<p class="intro-sub">' + N + ' répliques · Odette &amp; Gaston</p>' +
+        '<p class="rule">' + t("Odette et Gaston attendent le bus. À chaque réplique, choisissez la réponse qui accepte la proposition de l'autre et ajoute une idée nouvelle.") + '</p>' +
+        '<ul class="legend">' +
+          '<li><span class="tag tag-ok">Oui, et…</span>' + t("accepte et fait avancer") + '</li>' +
+          '<li><span class="tag tag-R">Refus</span>' + t("nie la proposition") + '</li>' +
+          '<li><span class="tag tag-M">Oui, mais</span>' + t("accepte puis annule") + '</li>' +
+          '<li><span class="tag tag-S">Oui sans ajout</span>' + t("fait du surplace") + '</li>' +
+          '<li><span class="tag tag-H">Hors sujet</span>' + t("ignore la proposition") + '</li>' +
+        '</ul>' +
+        '<button class="btn-main" id="start" type="button">Commencer</button>' +
+      '</section>';
+    $("start").addEventListener("click", start);
+  }
+
+  function renderTurn() {
+    var offerIdx = turn;                 // la réplique reçue
+    var from = speakerOf(offerIdx), to = speakerOf(offerIdx + 1);
+    var answered = picked !== null;
+    var opts = "";
+    for (var n = 0; n < 4; n++) {
+      var k = perm[n], o = option(k);
+      var cls = "opt";
+      if (answered) cls += k === 0 ? " is-right" : (k === picked ? " is-wrong" : " is-other");
+      opts += '<li><button class="' + cls + '" type="button" data-k="' + k + '"' + (answered ? " disabled" : "") + '>' +
+        '<span class="opt-n" aria-hidden="true">' + (n + 1) + '</span>' +
+        '<span class="opt-body"><span class="opt-text">«&nbsp;' + t(o.text) + '&nbsp;»</span>' +
+        '<span class="opt-tag tag tag-' + o.type + '">' + esc(TYPES[o.type].tag) + '</span></span>' +
+      '</button></li>';
+    }
+
+    var fb = "";
+    if (answered) {
+      var T = TURNS[turn], ok = picked === 0, last = turn === N - 1;
+      fb = '<div class="feedback ' + (ok ? "ok" : "ko") + '" id="feedback" tabindex="-1">' +
+        '<div class="verdict"><span class="ico" aria-hidden="true">' + (ok ? "✓" : "✗") + '</span>' + (ok ? "Bien vu&nbsp;!" : "Raté&nbsp;!") + '</div>' +
+        (ok ? "" : '<p class="why">' + t(TYPES[option(picked).type].why) + '</p>' +
+                   '<p class="good-line"><span class="gl-k">La réponse qui fait avancer</span>«&nbsp;' + t(T.ok[0]) + '&nbsp;»</p>') +
+        '<ul class="ap">' +
+          '<li><span class="ap-k">✓ Accepte</span><span>' + t(cap(T.ok[1])) + '</span></li>' +
+          '<li><span class="ap-k">+ Ajoute</span><span>' + t(cap(T.ok[2])) + '</span></li>' +
+        '</ul>' +
+        '<button class="btn-main" id="next" type="button">' + (last ? "Voir toute l'histoire" : "Réplique suivante") + '</button>' +
+      '</div>';
+    }
+
+    main.innerHTML =
+      '<section class="turn' + (answered ? " answered" : "") + '">' +
+        '<div class="bubble from-' + from + '"><span class="who">' + nameOf(from) + '</span><p>' + quote(lineText(offerIdx)) + '</p></div>' +
+        '<p class="ask">' + (answered ? "Réponse de " : "Que répond ") + '<b class="n-' + to + '">' + nameOf(to) + '</b>' + (answered ? "" : "&nbsp;?") + '</p>' +
+        '<ol class="options">' + opts + '</ol>' +
+        fb +
+      '</section>' +
+      '<details class="story"><summary>' + t("L'histoire jusqu'ici · " + (turn + 1) + (turn + 1 > 1 ? " répliques" : " réplique")) + '</summary>' +
+        '<ol class="lines">' + storyHtml(turn) + '</ol></details>';
+
+    var btns = main.querySelectorAll(".opt");
+    for (var b = 0; b < btns.length; b++) {
+      btns[b].addEventListener("click", function () { choose(parseInt(this.getAttribute("data-k"), 10)); });
+    }
+    var next = $("next");
+    if (next) next.addEventListener("click", nextTurn);
+  }
+
+  function renderEnd() {
+    var msg;
+    if (good >= N - 3) msg = "Vous acceptez et vous relancez comme un improvisateur aguerri.";
+    else if (good >= Math.round(N * 0.66)) msg = "Belle écoute. Repérez les « Oui, mais » et les « Oui » sans ajout qui vous ont piégé.";
+    else msg = "Relisez l'histoire à voix haute, puis rejouez : chaque bonne réponse accepte une chose et en ajoute une autre.";
+    main.innerHTML =
+      '<section class="end">' +
+        '<p class="end-label">Histoire terminée</p>' +
+        '<p class="end-score"><b>' + good + '</b> ' + (good > 1 ? "bons points" : "bon point") + ' sur ' + N + '</p>' +
+        '<p class="end-bad">' + bad + (bad > 1 ? " mauvais points" : " mauvais point") + '</p>' +
+        '<p class="end-msg">' + t(msg) + '</p>' +
+        '<h2>' + t("L'histoire complète") + '</h2>' +
+        '<p class="end-tip">' + t("À lire à deux voix : l'un est Odette, l'autre Gaston.") + '</p>' +
+        '<ol class="lines">' + storyHtml(N) + '</ol>' +
+        '<button class="btn-main" id="replay" type="button">Rejouer</button>' +
+      '</section>';
+    $("replay").addEventListener("click", restart);
+  }
+
+  function render() {
+    renderScores();
+    renderProgress();
+    if (phase === "intro") renderIntro();
+    else if (phase === "play") renderTurn();
+    else renderEnd();
+  }
+
+  function scrollTopNow() { try { window.scrollTo(0, 0); } catch (e) {} }
+
+  function start() {
+    phase = "play"; turn = 0; good = 0; bad = 0; picked = null; perm = shuffledPerm();
+    render();
+    scrollTopNow();
+    var first = main.querySelector(".opt"); if (first) focusEl(first);
+  }
+
+  function choose(k) {
+    if (phase !== "play" || picked !== null) return;
+    picked = k;
+    if (k === 0) { good++; bump(chipGood); } else { bad++; bump(chipBad); }
+    render();
+    var fbEl = $("feedback"), nx = $("next");
+    if (fbEl && nx) {
+      // L'explication s'affiche sous le bandeau ; si elle est trop haute (petit écran), on s'assure de voir le bouton
+      var head = document.querySelector(".top").offsetHeight;
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var fr = fbEl.getBoundingClientRect(), nr = nx.getBoundingClientRect();
+      var target = fr.height <= window.innerHeight - head - 24
+        ? y + fr.top - head - 12
+        : y + nr.bottom - window.innerHeight + 16;
+      try { window.scrollTo({ top: target, behavior: "smooth" }); } catch (e) { window.scrollTo(0, target); }
+      focusEl(nx);
+    }
+  }
+
+  function nextTurn() {
+    if (phase !== "play" || picked === null) return;
+    if (turn >= N - 1) { phase = "end"; picked = null; render(); scrollTopNow(); return; }
+    turn++; picked = null; perm = shuffledPerm();
+    render();
+    scrollTopNow();
+    var first = main.querySelector(".opt"); if (first) focusEl(first);
+  }
+
+  function restart() { start(); }
+
+  document.addEventListener("keydown", function (e) {
+    if (phase === "play" && picked === null && /^[1-4]$/.test(e.key)) {
+      e.preventDefault();
+      choose(perm[parseInt(e.key, 10) - 1]);
+    }
+  });
+
+  render();
+
+  // Si la page est mise à jour pendant une partie, on retrouve la partie en cours
+  function restore(data) {
+    if (!data || phase !== "intro") return;
+    if (["play", "end"].indexOf(data.phase) < 0 || typeof data.turn !== "number") return;
+    var okPerm = Object.prototype.toString.call(data.perm) === "[object Array]" && data.perm.length === 4;
+    phase = data.phase;
+    turn = Math.min(Math.max(Math.floor(data.turn), 0), N - 1);
+    good = typeof data.good === "number" ? data.good : 0;
+    bad = typeof data.bad === "number" ? data.bad : 0;
+    picked = typeof data.picked === "number" && data.picked >= 0 && data.picked <= 3 ? data.picked : null;
+    perm = okPerm ? data.perm.slice() : shuffledPerm();
+    render();
+  }
+  try {
+    var hot = window.claude && window.claude.hot;
+    if (hot && typeof hot.snapshot === "function") {
+      hot.snapshot(function () { return { phase: phase, turn: turn, good: good, bad: bad, picked: picked, perm: perm }; });
+    }
+    if (hot && typeof hot.ready === "function") hot.ready(restore);
+    else if (hot && hot.data) restore(hot.data);
+  } catch (err) {}
+})();
+</script>
+</body>
+</html>
