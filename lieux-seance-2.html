@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Lieux - séance 2 : 20 cartes de passage, un lieu, un objet qui fait passer, un autre lieu, une minute pour chaque étape.">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Lieux - séance 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=DM+Mono:wght@400;500&family=Shrikhand&display=swap">
+<style>
+/* Mise en page : une carte posée sur la table, en plein écran. Dos bleu nuit à croisillons safran avec médaillon « & » ;
+   recto épuré : un trajet en trois étapes (lieu 1, objet de passage, lieu 2), chacune avec un petit dessin et sa durée.
+   Sur téléphone, le trajet descend la carte ; sur écran large (vidéoprojecteur), il la traverse de gauche à droite.
+   Même famille que les autres paquets de l'atelier. Look unique et assumé, indépendant du thème.
+   CSS compatible avec les anciens iPhone (pas de inset, color-mix, aspect-ratio ni unités de conteneur). */
+:root {
+  --table: #06121f;
+  --table-glow: #12304d;
+  --back: #1f5288;
+  --back-deep: #133a63;
+  --saffron: #f2b134;
+  --saffron-15: rgba(242, 177, 52, .16);
+  --saffron-55: rgba(242, 177, 52, .55);
+  --paper: #f7f9fb;
+  --paper-20: rgba(247, 249, 251, .22);
+  --edge: #d6e0ea;
+  --ink: #142233;
+  --ink-soft: #4b5a6b;
+  --rule: #dde5ed;
+  --rail: #a7b6c6;
+  --shadow: rgba(2, 6, 12, .55);
+
+  /* Teintes des cartes : fond des dessins / texte sur papier */
+  --tomato: #e0543a;  --tomato-ink: #b13a22;
+  --teal: #17909d;    --teal-ink: #0d6b75;
+  --violet: #6b49b9;  --violet-ink: #5838a3;
+  --sun: #f0a53a;     --sun-ink: #94590a;
+  --rose: #d9508d;    --rose-ink: #ad2f68;
+  --green: #3c9057;   --green-ink: #2a6c3f;
+
+  --display: "Shrikhand", Georgia, serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+
+  --radius: 22px;
+  --c: min(24vw, 13vh, 112px);
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html { height: 100%; box-sizing: border-box; background: var(--table); -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--table);
+  background-image: radial-gradient(ellipse 80% 70% at 50% 40%, var(--table-glow), var(--table));
+  color: var(--paper);
+  font-family: var(--body);
+}
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stage { height: 100%; padding-block: 16px 24px; padding-inline: 16px 24px; }
+.slot { position: relative; width: 100%; height: 100%; -webkit-perspective: 2400px; perspective: 2400px; }
+
+/* ---------- Dos de carte ---------- */
+.back-art {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, var(--saffron-15) 0 2px, transparent 2px 28px),
+    repeating-linear-gradient(-45deg, var(--saffron-15) 0 2px, transparent 2px 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 3vh, 28px);
+  padding: 64px 24px;
+  color: var(--paper);
+}
+.back-art::before,
+.back-art::after { content: ""; position: absolute; pointer-events: none; }
+.back-art::before { top: 14px; right: 14px; bottom: 14px; left: 14px; border: 2px solid var(--saffron); border-radius: 14px; }
+.back-art::after { top: 21px; right: 21px; bottom: 21px; left: 21px; border: 1px solid var(--saffron-55); border-radius: 9px; }
+
+.medal {
+  position: relative;
+  z-index: 1;
+  width: min(54vmin, 380px);
+  height: min(54vmin, 380px);
+  border-radius: 50%;
+  background: var(--back-deep);
+  border: 3px solid var(--saffron);
+  box-shadow: 0 0 0 10px var(--back), 0 0 0 12px var(--saffron);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.medal-mark {
+  font-family: var(--display);
+  color: var(--saffron);
+  font-size: min(23vmin, 168px);
+  line-height: 1;
+  transform: rotate(-6deg);
+}
+.medal-name {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .22em;
+  font-size: clamp(.6rem, 1.8vmin, .85rem);
+  line-height: 1.6;
+  text-align: center;
+  color: var(--paper);
+  margin-top: .3em;
+}
+.credit {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 5px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: clamp(.62rem, 1.6vmin, .76rem);
+  letter-spacing: .14em;
+  line-height: 1.5;
+  color: var(--saffron);
+  white-space: nowrap;
+}
+.credit span { background: var(--back); padding: 0 .9em; }
+
+/* ---------- Le paquet ---------- */
+.deck {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  padding-block: 64px 120px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.deck[data-layers="2"] { box-shadow: 3px 3px 0 var(--back-deep), 4px 4px 0 var(--edge), 7px 7px 0 var(--back-deep), 8px 8px 0 var(--edge), 16px 20px 40px var(--shadow); }
+.deck[data-layers="1"] { box-shadow: 3px 3px 0 var(--back-deep), 4px 4px 0 var(--edge), 14px 18px 36px var(--shadow); }
+.deck[data-layers="0"] { box-shadow: 12px 16px 32px var(--shadow); }
+@media (hover: hover) { .deck:hover { transform: translateY(-3px); } }
+.deck:focus-visible { outline: 3px solid var(--saffron); outline-offset: 5px; }
+.deck.shuffling { animation: shuffle .5s ease; }
+@keyframes shuffle {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(-10px) rotate(-1.2deg); }
+  50% { transform: translateX(8px) rotate(1deg); }
+  75% { transform: translateX(-4px) rotate(-.4deg); }
+}
+.deck-count {
+  position: relative;
+  z-index: 1;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: clamp(.75rem, 2vmin, .9rem);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--saffron);
+  font-variant-numeric: tabular-nums;
+}
+.deck-hint {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(1rem, 2.6vmin, 1.3rem);
+  color: var(--paper);
+  text-wrap: balance;
+}
+
+.tools {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: clamp(42px, 6.5vmin, 58px);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.tool {
+  font-family: var(--mono);
+  font-size: .76rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--saffron);
+  background: var(--back-deep);
+  border: 1px solid var(--saffron-55);
+  border-radius: 999px;
+  padding: .6em 1.15em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, color .2s;
+}
+@media (hover: hover) { .tool:hover { background: var(--saffron); color: var(--back-deep); } }
+.tool:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+
+/* ---------- Paquet vide ---------- */
+.empty {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  border-radius: var(--radius);
+  border: 2px dashed var(--saffron-55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+}
+.empty h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 5.5vmin, 3.2rem); color: var(--saffron); text-wrap: balance; }
+.empty p { margin: 0; max-width: 34ch; font-size: clamp(1rem, 2.4vmin, 1.2rem); color: var(--edge); }
+.btn-gold {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--back-deep);
+  background: var(--saffron);
+  border: 0;
+  border-radius: 999px;
+  padding: .85em 1.7em;
+  cursor: pointer;
+}
+@media (hover: hover) { .btn-gold:hover { background: var(--paper); } }
+.btn-gold:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
+
+/* ---------- La carte tirée (retournement 3D compatible Safari) ---------- */
+.card {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: 5;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+  transform: translateX(0) rotate(0deg) rotateY(0deg);
+  transition: transform .8s cubic-bezier(.2, .75, .25, 1);
+}
+.card.flipped { transform: translateX(0) rotate(0deg) rotateY(180deg); }
+.card.leaving { transform: translateX(118%) rotate(10deg) rotateY(180deg); transition: transform .55s cubic-bezier(.55, 0, .8, .3); }
+.card.instant { transition: none; }
+
+.face {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+/* Safari : chaque face décollée d'un pixel et descendants masqués aussi, sinon le dos transparaît */
+.face, .face * { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.face.back-art { transform: rotateY(0deg) translateZ(1px); }
+.face-front {
+  transform: rotateY(180deg) translateZ(1px);
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  padding: clamp(18px, 3.5vmin, 36px) clamp(18px, 4vmin, 44px) clamp(14px, 3vmin, 30px);
+  box-shadow: 0 24px 60px var(--shadow);
+}
+.front-head { flex: none; display: flex; justify-content: space-between; align-items: baseline; }
+.numeral { font-family: var(--display); font-size: clamp(1.4rem, 4.4vmin, 2.6rem); line-height: 1; color: var(--hue-ink); }
+.front-deck { margin-left: 16px; font-family: var(--mono); font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap; }
+
+/* Le trajet : lieu 1, objet de passage, lieu 2 */
+.route {
+  flex: 1 1 auto;
+  min-height: 0;
+  list-style: none;
+  margin: 0;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-bottom: clamp(16px, 3.4vh, 30px);
+}
+.stop:last-child { padding-bottom: 0; }
+.stop::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--c) / 2 - 1px);
+  top: var(--c);
+  bottom: 0;
+  border-left: 2px dashed var(--rail);
+}
+.stop:last-child::after { display: none; }
+.stop-text { flex: 1 1 auto; min-width: 0; padding-left: 16px; }
+
+.pic {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: var(--c);
+  height: var(--c);
+  border-radius: 50%;
+  background-color: var(--hue);
+  background-image: radial-gradient(var(--paper-20) 1.4px, transparent 1.7px);
+  background-size: 14px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pic span { font-family: var(--emoji); font-size: calc(var(--c) * .52); line-height: 1; }
+.stop.via .pic {
+  background: var(--paper);
+  border: 3px dashed var(--hue-ink);
+  box-shadow: 0 0 0 5px var(--paper), 0 0 0 7px var(--hue);
+}
+
+.label {
+  display: block;
+  margin-bottom: .3em;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: .74rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.label b { font-weight: 500; color: var(--hue-ink); }
+.place { margin: 0; font-weight: 700; font-size: clamp(1.2rem, 5.8vw, 1.7rem); line-height: 1.2; text-wrap: balance; }
+.object { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(1.2rem, 5.8vw, 1.75rem); line-height: 1.15; color: var(--hue-ink); text-wrap: balance; }
+
+.front-foot {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding-top: clamp(12px, 2vh, 20px);
+  border-top: 1px solid var(--rule);
+}
+.left {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: .82rem;
+  letter-spacing: .06em;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.btn-remove {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: clamp(1rem, 2.2vh, 1.15rem);
+  color: var(--paper);
+  background: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  padding: .85em 1.7em;
+  cursor: pointer;
+  transition: background .2s;
+}
+@media (hover: hover) { .btn-remove:hover { background: var(--hue-ink); } }
+.btn-remove:focus-visible { outline: 3px solid var(--hue); outline-offset: 3px; }
+
+/* Écran large (ordinateur, vidéoprojecteur) : le trajet traverse la carte de gauche à droite */
+@media (min-aspect-ratio: 5/4) and (min-width: 700px) {
+  :root { --c: min(15vw, 30vh, 220px); }
+  .route { flex-direction: row; flex-wrap: wrap; align-content: center; align-items: flex-start; padding: 24px 0; }
+  .stop { flex: 1 1 0; min-width: 0; flex-direction: column; align-items: center; text-align: center; padding: 0 12px; }
+  .stop:last-child { padding: 0 12px; }
+  .stop::after {
+    top: calc(var(--c) / 2 - 1px);
+    bottom: auto;
+    left: calc(50% + var(--c) / 2 + 14px);
+    right: calc(-50% + var(--c) / 2 + 14px);
+    border-left: 0;
+    border-top: 2px dashed var(--rail);
+  }
+  .stop-text { padding: 22px 0 0; }
+  .label { font-size: .8rem; }
+  .place { font-size: clamp(1.3rem, 2.4vw, 2.2rem); }
+  .object { font-size: clamp(1.4rem, 2.7vw, 2.5rem); }
+}
+@media (max-width: 400px) {
+  .stage { padding-inline: 16px 20px; }
+  .front-deck { display: none; }
+  .btn-remove { padding: .75em 1.4em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .card.leaving, .deck { transition: none; }
+  .deck.shuffling { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<main class="stage">
+  <div class="slot">
+    <button class="deck back-art" id="deck" type="button" data-layers="2" aria-label="Tirer un passage">
+      <span class="deck-count" id="deck-count">20 cartes</span>
+      <span class="medal" aria-hidden="true"><span class="medal-mark">&amp;</span><span class="medal-name">Lieux<br>séance 2</span></span>
+      <span class="deck-hint">Touchez le paquet pour tirer un passage</span>
+      <span class="credit"><span>© Christophe Gentil – 2026</span></span>
+    </button>
+
+    <div class="tools" id="tools">
+      <button class="tool" id="shuffle" type="button">Remélanger</button>
+      <button class="tool" id="fullscreen" type="button">Plein écran</button>
+    </div>
+
+    <section class="empty" id="empty" hidden>
+      <h2>Tous les passages ont été joués</h2>
+      <p>Remélangez le paquet pour retrouver les 20 cartes.</p>
+      <button class="btn-gold" id="reshuffle" type="button">Remélanger le paquet</button>
+    </section>
+
+    <div class="card" id="card" hidden>
+      <div class="face back-art" aria-hidden="true">
+        <span class="medal"><span class="medal-mark">&amp;</span><span class="medal-name">Lieux<br>séance 2</span></span>
+        <span class="credit"><span>© Christophe Gentil – 2026</span></span>
+      </div>
+      <article class="face face-front" aria-live="polite">
+        <header class="front-head">
+          <span class="numeral" id="f-num"></span>
+          <span class="front-deck">Lieux · séance 2</span>
+        </header>
+        <ol class="route">
+          <li class="stop">
+            <span class="pic" aria-hidden="true"><span id="f-e1"></span></span>
+            <div class="stop-text"><span class="label">Lieu 1 · <b>1&nbsp;min</b></span><p class="place" id="f-l1"></p></div>
+          </li>
+          <li class="stop via">
+            <span class="pic" aria-hidden="true"><span id="f-eo"></span></span>
+            <div class="stop-text"><span class="label">Objet · <b>1&nbsp;min</b></span><p class="object" id="f-ob"></p></div>
+          </li>
+          <li class="stop">
+            <span class="pic" aria-hidden="true"><span id="f-e2"></span></span>
+            <div class="stop-text"><span class="label">Lieu 2 · <b>1&nbsp;min</b></span><p class="place" id="f-l2"></p></div>
+          </li>
+        </ol>
+        <footer class="front-foot">
+          <p class="left" id="f-left"></p>
+          <button class="btn-remove" id="remove" type="button">Retirer la carte</button>
+        </footer>
+      </article>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var HUES = [
+    ["var(--teal)",   "var(--teal-ink)"],
+    ["var(--violet)", "var(--violet-ink)"],
+    ["var(--tomato)", "var(--tomato-ink)"],
+    ["var(--sun)",    "var(--sun-ink)"],
+    ["var(--rose)",   "var(--rose-ink)"],
+    ["var(--green)",  "var(--green-ink)"]
+  ];
+
+  // Chaque carte : [lieu 1, dessin], [objet de passage, dessin], [lieu 2, dessin]
+  var CARDS = [
+    [["Une bibliothèque", "📚"], ["Un livre poussiéreux", "📖"], ["Un château hanté", "🏰"]],
+    [["Un garage", "🔧"], ["Le capot d'une voiture", "🚗"], ["Un circuit de Formule 1", "🏎️"]],
+    [["Un salon", "🛋️"], ["La télécommande", "📺"], ["Un jeu télévisé en direct", "🎤"]],
+    [["Une chambre d'hôtel", "🏨"], ["Le téléphone de la chambre", "☎️"], ["Le bureau du président", "🏛️"]],
+    [["Un potager", "🥕"], ["Une graine de haricot", "🌱"], ["Le sommet d'un nuage", "☁️"]],
+    [["Un cinéma", "🍿"], ["L'écran géant", "🎬"], ["Le Far West", "🤠"]],
+    [["Une salle de sport", "🏋️"], ["Le tapis de course", "🏃"], ["Les Jeux olympiques", "🏅"]],
+    [["Un bureau de poste", "📮"], ["Un colis mystérieux", "📦"], ["Un palais des Mille et Une Nuits", "🕌"]],
+    [["Une plage", "🏖️"], ["Une bouteille à la mer", "🍾"], ["Une île déserte", "🏝️"]],
+    [["Une cave à vin", "🍷"], ["Un vieux tonneau", "🛢️"], ["Une taverne de pirates", "🏴‍☠️"]],
+    [["Un aéroport", "✈️"], ["Le tapis à bagages", "🧳"], ["Un souk aux épices", "🌶️"]],
+    [["Une ferme", "🐄"], ["Une botte de foin", "🌾"], ["Un cirque", "🎪"]],
+    [["Un hôpital", "🏥"], ["Un stéthoscope", "🩺"], ["Un studio d'enregistrement", "🎙️"]],
+    [["Une église", "⛪"], ["Les tuyaux de l'orgue", "🎹"], ["Un concert de rock", "🎸"]],
+    [["Un parking souterrain", "🅿️"], ["Une grille d'aération", "🌀"], ["Le centre de la Terre", "🌋"]],
+    [["Un train de nuit", "🚂"], ["La couchette", "🛏️"], ["Le pays des bonbons", "🍭"]],
+    [["Une station de ski", "⛷️"], ["Le télésiège", "🚡"], ["Une base secrète d'espions", "🕶️"]],
+    [["Un marché de Noël", "🎄"], ["Un bonnet de laine", "🧶"], ["Le pôle Nord", "❄️"]],
+    [["Un commissariat", "🚓"], ["Un portrait-robot", "🖼️"], ["Un musée de cire", "🕯️"]],
+    [["Un musée d'histoire naturelle", "🦕"], ["Un œuf de dinosaure", "🥚"], ["La préhistoire", "🦣"]]
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  var deck = $("deck"), deckCount = $("deck-count"), tools = $("tools"),
+      emptyEl = $("empty"), reshuffleBtn = $("reshuffle"), shuffleBtn = $("shuffle"),
+      fsBtn = $("fullscreen"), card = $("card"), removeBtn = $("remove");
+  var f = { num: $("f-num"), e1: $("f-e1"), l1: $("f-l1"), eo: $("f-eo"), ob: $("f-ob"), e2: $("f-e2"), l2: $("f-l2"), left: $("f-left") };
+
+  var reduce = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  function flipMs() { return reduce.matches ? 0 : 800; }
+  function leaveMs() { return reduce.matches ? 0 : 550; }
+
+  function plural(n) { return n + (n > 1 ? " cartes" : " carte"); }
+  function roman(n) {
+    var map = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]], out = "";
+    for (var k = 0; k < map.length; k++) { while (n >= map[k][0]) { out += map[k][1]; n -= map[k][0]; } }
+    return out;
+  }
+  function focusEl(el) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+
+  var order = [], idx = 0, current = null, busy = false;
+
+  function shuffle() {
+    order = CARDS.map(function (_, i) { return i; });
+    for (var i = order.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    idx = 0;
+  }
+  function remaining() { return order.length - idx; }
+
+  function renderDeck() {
+    var r = remaining();
+    deckCount.textContent = plural(r);
+    deck.setAttribute("data-layers", String(Math.min(2, Math.max(0, r - 1))));
+    var empty = r === 0;
+    deck.hidden = empty;
+    tools.hidden = empty;
+    emptyEl.hidden = !empty;
+  }
+
+  function fill(i) {
+    var c = CARDS[i], h = HUES[i % HUES.length];
+    card.style.setProperty("--hue", h[0]);
+    card.style.setProperty("--hue-ink", h[1]);
+    f.num.textContent = roman(i + 1);
+    f.l1.textContent = c[0][0]; f.e1.textContent = c[0][1];
+    f.ob.textContent = c[1][0]; f.eo.textContent = c[1][1];
+    f.l2.textContent = c[2][0]; f.e2.textContent = c[2][1];
+    var r = remaining();
+    f.left.textContent = r === 0 ? "Dernière carte du paquet" : "Il reste " + plural(r);
+  }
+
+  function show(i, animate) {
+    fill(i);
+    card.classList.remove("flipped", "leaving");
+    card.hidden = false;
+    if (!animate) {
+      card.classList.add("instant", "flipped");
+      void card.offsetWidth;
+      card.classList.remove("instant");
+    } else {
+      void card.offsetWidth;
+      card.classList.add("flipped");
+    }
+  }
+
+  function draw() {
+    if (busy || current !== null || remaining() === 0) return;
+    busy = true;
+    current = order[idx++];
+    show(current, true);
+    renderDeck();
+    setTimeout(function () { busy = false; focusEl(removeBtn); }, flipMs());
+  }
+
+  function removeCard() {
+    if (busy || current === null) return;
+    busy = true;
+    card.classList.add("leaving");
+    setTimeout(function () {
+      card.hidden = true;
+      card.classList.remove("flipped", "leaving");
+      current = null;
+      busy = false;
+      renderDeck();
+      focusEl(remaining() ? deck : reshuffleBtn);
+    }, leaveMs());
+  }
+
+  function restart() {
+    if (busy || current !== null) return;
+    shuffle();
+    renderDeck();
+    deck.classList.remove("shuffling");
+    void deck.offsetWidth;
+    deck.classList.add("shuffling");
+    focusEl(deck);
+  }
+
+  deck.addEventListener("click", draw);
+  deck.addEventListener("animationend", function () { deck.classList.remove("shuffling"); });
+  removeBtn.addEventListener("click", removeCard);
+  shuffleBtn.addEventListener("click", restart);
+  reshuffleBtn.addEventListener("click", restart);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { removeCard(); return; }
+    if ((e.key === " " || e.key === "Enter") && current === null && document.activeElement === document.body) {
+      e.preventDefault();
+      draw();
+    }
+  });
+
+  // Plein écran : absent sur iPhone, le bouton est alors masqué
+  var rootEl = document.documentElement;
+  var canFs = !!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen);
+  if (!canFs) fsBtn.hidden = true;
+  fsBtn.addEventListener("click", function () {
+    try {
+      var isFs = document.fullscreenElement || document.webkitFullscreenElement;
+      var p = isFs
+        ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+        : (rootEl.requestFullscreen || rootEl.webkitRequestFullscreen).call(rootEl);
+      if (p && p.catch) p.catch(function () { fsBtn.hidden = true; });
+    } catch (err) { fsBtn.hidden = true; }
+  });
+  function onFsChange() {
+    fsBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? "Quitter le plein écran" : "Plein écran";
+  }
+  document.addEventListener("fullscreenchange", onFsChange);
+  document.addEventListener("webkitfullscreenchange", onFsChange);
+
+  // Le paquet est prêt immédiatement, sans attendre la visionneuse
+  shuffle();
+  renderDeck();
+
+  // Si la page est mise à jour pendant une partie, on retrouve le paquet en cours
+  function restore(data) {
+    if (!data || current !== null || idx > 0) return;
+    if (Object.prototype.toString.call(data.order) === "[object Array]" && data.order.length === CARDS.length && typeof data.idx === "number") {
+      order = data.order.slice();
+      idx = Math.min(Math.max(Math.floor(data.idx), 0), order.length);
+    }
+    if (typeof data.current === "number" && CARDS[data.current]) {
+      current = data.current;
+      show(current, false);
+    }
+    renderDeck();
+  }
+  try {
+    var hot = window.claude && window.claude.hot;
+    if (hot && typeof hot.snapshot === "function") {
+      hot.snapshot(function () { return { order: order, idx: idx, current: current }; });
+    }
+    if (hot && typeof hot.ready === "function") hot.ready(restore);
+    else if (hot && hot.data) restore(hot.data);
+  } catch (err) {}
+})();
+</script>
+</body>
+</html>
