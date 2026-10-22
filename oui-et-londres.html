@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Oui, et… à Londres : 30 répliques à choisir pour faire avancer, pas à pas, l'histoire de deux copines, du parking souterrain au centre de la Terre.">
+<meta name="description" content="Oui, et… à Londres : 36 répliques pour s'entraîner à reprendre ce que dit l'autre, puis à proposer, du parking souterrain au Centre de la Terre.">
 <style>
 :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 img { max-width: 100%; }
@@ -222,6 +222,7 @@ button {
 }
 .opt-body { flex: 1 1 auto; min-width: 0; }
 .opt-text { display: block; font-size: 1.05rem; }
+.answered .rep { text-decoration: underline; text-decoration-color: var(--good-light); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .opt .opt-tag { display: none; margin-top: 8px; }
 .answered .opt .opt-tag { display: inline-block; }
 .answered .opt { cursor: default; }
@@ -241,7 +242,7 @@ button {
   white-space: nowrap;
 }
 .tag-ok { background: var(--good); color: var(--paper); }
-.tag-R, .tag-M, .tag-S, .tag-H { background: rgba(255, 154, 130, .16); color: var(--bad-light); border: 1px solid rgba(255, 154, 130, .5); }
+.tag-R, .tag-M, .tag-S, .tag-P, .tag-H { background: rgba(255, 154, 130, .16); color: var(--bad-light); border: 1px solid rgba(255, 154, 130, .5); }
 
 /* ---------- Explication ---------- */
 .feedback {
@@ -264,7 +265,7 @@ button {
 .gl-k { display: block; margin-bottom: .2em; font-family: var(--mono); font-weight: 500; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--good-ink); }
 .ap { margin: 12px 0 0; padding: 0; list-style: none; }
 .ap li { display: flex; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--rule); line-height: 1.4; }
-.ap-k { flex: none; width: 6.4em; font-family: var(--mono); font-weight: 500; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--good-ink); }
+.ap-k { flex: none; width: 7.8em; padding-right: .6em; font-family: var(--mono); font-weight: 500; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--good-ink); }
 .feedback .btn-main { margin: 14px 0 12px; }
 
 /* ---------- L'histoire ---------- */
@@ -333,7 +334,7 @@ button {
       </div>
     </div>
     <div class="progress">
-      <span class="progress-text" id="progress-text">30 répliques</span>
+      <span class="progress-text" id="progress-text">36 répliques</span>
       <span class="bar" aria-hidden="true"><i id="bar-fill"></i></span>
     </div>
   </header>
@@ -342,8 +343,8 @@ button {
     <section class="intro">
       <div class="intro-cast" aria-hidden="true"><span class="avatar o">S</span><span class="avatar g">N</span></div>
       <h1>Oui, et…<br>à Londres</h1>
-      <p class="intro-sub">30 répliques · Sandrine &amp; Nathalie</p>
-      <p class="rule">Deux copines, une voiture de location et un parking souterrain. À chaque réplique, choisissez la réponse qui accepte la proposition de l'autre et ajoute une idée nouvelle.</p>
+      <p class="intro-sub">36 répliques · Sandrine &amp; Nathalie</p>
+      <p class="rule">Deux copines, une voiture de location et un parking souterrain. À chaque réplique, choisissez la réponse qui reprend ce que l'autre vient de dire, puis propose une idée nouvelle.</p>
       <button class="btn-main" id="start" type="button">Commencer</button>
     </section>
   </main>
@@ -355,79 +356,92 @@ button {
 (function () {
   "use strict";
 
-  var START = "Ouf, garées dans le parking souterrain ! Conduire à gauche dans Londres, plus jamais.";
+  var START = "Ça y est, je suis garée ! Conduire à gauche dans Londres, plus jamais.";
 
   // Types de réponses
   var TYPES = {
     ok: { tag: "Oui, et…", why: "" },
     R:  { tag: "Refus", why: "Refus : la proposition est niée, l'histoire s'arrête net." },
-    M:  { tag: "Oui, mais", why: "« Oui, mais » : on accepte du bout des lèvres, puis on annule la proposition." },
-    S:  { tag: "Oui sans ajout", why: "Accepté, mais rien de neuf : l'histoire fait du surplace." },
+    M:  { tag: "Oui, mais", why: "« Oui, mais » : on reprend du bout des lèvres, puis on annule la proposition." },
+    S:  { tag: "Oui sans ajout", why: "On reprend bien ce que l'autre a dit, mais on ne propose rien : l'histoire fait du surplace." },
+    P:  { tag: "Sans reprise", why: "On propose quelque chose sans reprendre ce que l'autre vient de dire : il ne se sent pas écouté." },
     H:  { tag: "Hors sujet", why: "Hors sujet : on ignore la proposition pour placer sa propre idée." }
   };
 
-  // 30 répliques. ok = [réponse qui fait avancer, ce qu'elle accepte, ce qu'elle ajoute] ; d = les trois autres réponses
+  // ok = [réponse complète, ce qu'elle reprend de l'autre, ce qu'elle propose] ; d = les trois autres réponses
   var TURNS = [
-    { ok: ["En plus, on a trouvé une place au troisième sous-sol, juste à côté de l'ascenseur.", "on est garées dans le parking", "une place au troisième sous-sol"],
-      d: [["R", "On n'est pas à Londres, on est à Limoges."], ["M", "D'accord, mais on aurait mieux fait de prendre le train."], ["S", "Oui, on est garées."]] },
-    { ok: ["Il fait un peu sombre, quand même : un néon sur deux clignote.", "la place au troisième sous-sol", "les néons qui clignotent"],
-      d: [["R", "Non, on est au rez-de-chaussée, en plein soleil."], ["M", "Oui, mais l'ascenseur est sûrement en panne, on ressort se garer dehors."], ["H", "Tu as pensé à appeler ta mère ?"]] },
-    { ok: ["Et ça sent le pneu chaud et le fish and chips.", "l'ambiance sombre du sous-sol", "l'odeur"],
-      d: [["R", "Sombre ? Il fait clair comme en plein jour."], ["S", "Oui, il fait sombre."], ["M", "Oui, mais ce n'est pas grave, n'en parlons plus."]] },
-    { ok: ["Je note le numéro de la place pour la retrouver : C42.", "le parking et son ambiance", "le numéro de la place"],
-      d: [["R", "Ça ne sent rien du tout."], ["M", "Oui, mais je suis enrhumée, je ne sens rien."], ["H", "Tu crois qu'il va pleuvoir cet après-midi ?"]] },
-    { ok: ["Bonne idée : notre voiture de location est si petite qu'on pourrait la perdre.", "noter le numéro de la place", "la voiture de location est minuscule"],
-      d: [["R", "Inutile, il n'y a pas de numéros dans ce parking."], ["S", "D'accord, C42."], ["M", "Oui, mais tu vas perdre le papier, comme d'habitude."]] },
-    { ok: ["Et rose bonbon : c'était la dernière qui restait à l'agence.", "la petite voiture de location", "sa couleur rose bonbon"],
-      d: [["R", "Petite ? C'est un énorme 4x4."], ["M", "Oui, mais une voiture, c'est une voiture, ça n'a aucune importance."], ["H", "On devrait acheter des scones pour ce soir."]] },
-    { ok: ["Avec le volant à droite, j'ai mis dix minutes à trouver le clignotant.", "la voiture rose de l'agence", "le volant à droite"],
-      d: [["R", "Elle n'est pas rose, elle est grise."], ["S", "Oui, elle est rose."], ["M", "Oui, mais je déteste le rose, on la rend tout de suite."]] },
-    { ok: ["Et le GPS ne parle qu'anglais, avec un accent écossais.", "la conduite de cette voiture", "le GPS à l'accent écossais"],
-      d: [["R", "Le volant est à gauche, comme chez nous."], ["M", "Oui, mais c'est fini, on ne reprend plus jamais cette voiture."], ["S", "Ah oui, le volant à droite."]] },
-    { ok: ["Il nous a quand même menées jusqu'ici. Maintenant, place aux soldes !", "le GPS écossais", "les soldes"],
-      d: [["R", "Il n'y a pas de GPS dans cette voiture."], ["S", "Oui, il parle anglais."], ["H", "Il faudra que je rachète du shampoing."]] },
-    { ok: ["J'ai fait une liste : un manteau, des bottes et un chapeau ridicule.", "les soldes", "la liste de courses"],
-      d: [["R", "Les soldes ? Elles sont finies depuis hier."], ["M", "Oui, mais je suis fatiguée, on va plutôt à l'hôtel."], ["S", "Oui, les soldes."]] },
-    { ok: ["Moi, je me fixe un budget : cinquante livres, pas une de plus.", "la liste de courses", "le budget de cinquante livres"],
-      d: [["R", "Tu n'as pas fait de liste, je te connais."], ["M", "D'accord, mais on n'achètera rien de tout ça, c'est trop cher."], ["H", "Au fait, tu as gardé le ticket du parking ?"]] },
-    { ok: ["À la première folie, je te confisque ta carte bancaire.", "le budget de cinquante livres", "la menace de confisquer la carte"],
-      d: [["R", "Toi, un budget ? Tu ne sais pas ce que c'est."], ["S", "D'accord, cinquante livres."], ["M", "Oui, mais avec cinquante livres, on n'achètera rien, autant rester ici."]] },
-    { ok: ["Marché conclu. Ferme la voiture, et on y va.", "la carte confisquée en cas de folie", "fermer la voiture"],
-      d: [["R", "Hors de question, ma carte reste dans ma poche."], ["M", "Oui, mais je n'ai pas de carte bancaire, seulement des euros."], ["S", "D'accord, tu confisques ma carte."]] },
-    { ok: ["Je verrouille… et oups, les clés m'ont glissé des mains.", "fermer la voiture", "les clés glissent"],
-      d: [["R", "Non, on reste encore un peu dans la voiture."], ["S", "Oui, je ferme la voiture."], ["H", "Tu as vu la taille des pigeons, ici ?"]] },
-    { ok: ["Elles ont rebondi par terre et filé droit dans la grille d'égout.", "les clés qui glissent", "elles tombent dans la grille d'égout"],
-      d: [["R", "Mais non, elles sont toujours dans ta main."], ["M", "Oui, mais ce n'est rien, ramasse-les et on y va."], ["S", "Ah, tu as fait tomber les clés."]] },
-    { ok: ["Je les vois encore : elles brillent, juste sous la grille.", "les clés dans la grille d'égout", "on les voit briller"],
-      d: [["R", "Pas du tout, elles sont à côté de ton pied."], ["M", "Oui, mais tant pis, on rentre en France à pied."], ["H", "On devrait prévenir l'hôtel qu'on rentrera tard."]] },
-    { ok: ["Cette grille est en fonte, avec un écusson de la Couronne gravé dessus.", "les clés qui brillent sous la grille", "la grille en fonte et son écusson"],
-      d: [["R", "Je ne vois rien, elles sont perdues."], ["S", "Oui, elles brillent."], ["M", "Oui, mais on ne pourra jamais les attraper, laisse tomber."]] },
-    { ok: ["J'essaie de la soulever… elle ne bouge pas d'un millimètre.", "la grille en fonte", "elle est trop lourde"],
-      d: [["R", "Ce n'est pas de la fonte, c'est du plastique."], ["M", "D'accord, mais l'écusson, on s'en fiche."], ["H", "Tu crois que les magasins ferment tard ?"]] },
-    { ok: ["Pas de panique : j'ai une pince-monseigneur dans mon sac à main.", "la grille trop lourde", "la pince-monseigneur"],
-      d: [["R", "Mais si, elle bouge, tu ne tires pas assez fort."], ["S", "Oui, elle ne bouge pas."], ["M", "Oui, mais alors c'est fichu, on appelle un taxi."]] },
-    { ok: ["Une pince-monseigneur ?! En vingt ans d'amitié, tu ne m'as jamais dit ça.", "la pince-monseigneur dans le sac", "la surprise de la copine"],
-      d: [["R", "Ton sac est vide, je le vois d'ici."], ["M", "Oui, mais ça ne servira à rien, la grille est soudée."], ["S", "D'accord, tu as une pince."]] },
-    { ok: ["Souvenir de mon ancien métier : avant le yoga, j'étais serrurière.", "la surprise devant la pince", "son passé de serrurière"],
-      d: [["R", "Ce n'est pas une pince-monseigneur, c'est une baguette de pain."], ["M", "Oui, mais je ne sais pas du tout m'en servir."], ["H", "On devrait acheter un parapluie, non ?"]] },
-    { ok: ["Alors vas-y, force la grille, je fais le guet.", "la copine serrurière", "forcer la grille pendant que l'autre fait le guet"],
-      d: [["R", "Serrurière ? Non, tu as toujours été prof de yoga."], ["S", "Ah, d'accord. Serrurière."], ["M", "Oui, mais c'est interdit d'ouvrir une grille, on va se faire arrêter."]] },
-    { ok: ["Clac, elle s'ouvre… et dessous, une échelle descend dans le noir.", "forcer la grille", "une échelle qui descend dans le noir"],
-      d: [["R", "Non, je ne touche pas à cette grille."], ["M", "D'accord, mais elle est trop lourde, je n'y arriverai jamais."], ["S", "Bon. Je force la grille."]] },
-    { ok: ["Mes clés ne sont plus là : on les entend tomber, encore et encore.", "l'échelle dans le noir", "les clés tombent encore"],
-      d: [["R", "Il n'y a pas d'échelle, c'est un simple trou."], ["M", "Oui, mais je refuse de descendre là-dedans."], ["H", "Tu as vu le prix de l'essence ici ?"]] },
-    { ok: ["On descend les chercher : passe devant, j'éclaire avec mon téléphone.", "les clés qui tombent encore", "la descente à la lumière du téléphone"],
-      d: [["R", "Mais non, elles sont juste là, sur le premier barreau."], ["S", "Oui, elles tombent."], ["M", "Oui, mais on ne les rattrapera jamais, appelons l'agence de location."]] },
-    { ok: ["Plus on descend, plus il fait chaud. J'enlève mon manteau.", "la descente", "la chaleur qui monte"],
-      d: [["R", "Non, on ne descend pas, c'est trop noir."], ["M", "D'accord, mais ton téléphone n'a plus de batterie."], ["S", "On descend, oui."]] },
-    { ok: ["Normal : un panneau indique “Centre de la Terre : 6 371 kilomètres”.", "la chaleur", "le panneau vers le centre de la Terre"],
-      d: [["R", "Chaud ? Il fait un froid de canard."], ["S", "Oui, il fait chaud."], ["H", "Au fait, on mange où ce soir ?"]] },
-    { ok: ["Tout en bas, il y a de la lumière : un salon de thé, en plein centre de la Terre !", "le panneau du centre de la Terre", "un salon de thé au centre de la Terre"],
-      d: [["R", "Il n'y a pas de panneau, tu as trop d'imagination."], ["M", "Oui, mais c'est beaucoup trop loin, on remonte."], ["S", "6 371 kilomètres, d'accord."]] },
-    { ok: ["Et la serveuse nous apporte nos clés sur un plateau… avec deux scones.", "le salon de thé", "les clés rendues avec des scones"],
-      d: [["R", "Il n'y a rien du tout, il fait tout noir."], ["S", "D'accord, un salon de thé."], ["H", "Tu crois que la voiture est bien fermée ?"]] },
-    { ok: ["Parfait : on goûte, puis on file aux soldes. Cette fois, c'est toi qui gardes les clés !", "les clés rendues avec les scones", "le goûter, les soldes, et l'autre garde les clés"],
-      d: [["R", "Ce ne sont pas nos clés, les nôtres ont un porte-clés."], ["M", "Oui, mais je ne mange jamais de scones, on remonte tout de suite."], ["S", "Oui, voilà nos clés."]] }
+    { ok: ["Oui, bravo, te voilà bien garée, et on a même trouvé une place au troisième sous-sol.", "Oui, bravo, te voilà bien garée,", "et on a même trouvé une place au troisième sous-sol."],
+      d: [["S", "Oui, bravo, te voilà bien garée."], ["P", "On a trouvé une place au troisième sous-sol."], ["R", "Garée ? On est encore en train de tourner dans le parking."]] },
+    { ok: ["Le troisième sous-sol, c'est vrai, on est descendues bien bas, et il fait sombre : un néon sur deux clignote.", "Le troisième sous-sol, c'est vrai, on est descendues bien bas,", "et il fait sombre : un néon sur deux clignote."],
+      d: [["S", "Oui, le troisième sous-sol, on est descendues bien bas."], ["P", "Allez, on file tout de suite aux soldes !"], ["M", "Oui, le troisième sous-sol, mais c'est trop loin, on ressort se garer dehors."]] },
+    { ok: ["Oui, ces néons qui clignotent font très film d'horreur, et ça sent le pneu chaud et le fish and chips.", "Oui, ces néons qui clignotent font très film d'horreur,", "et ça sent le pneu chaud et le fish and chips."],
+      d: [["S", "C'est vrai, ces néons clignotent."], ["P", "Ça sent le pneu chaud et le fish and chips."], ["H", "Tu as pensé à appeler ta mère ?"]] },
+    { ok: ["Ah, l'odeur du fish and chips, on est bien à Londres : je note le numéro de la place pour la retrouver, C42.", "Ah, l'odeur du fish and chips, on est bien à Londres :", "je note le numéro de la place pour la retrouver, C42."],
+      d: [["S", "Oui, ça sent le fish and chips."], ["P", "Je note le numéro de la place : C42."], ["R", "Ça ne sent rien du tout, tu as le nez bouché."]] },
+    { ok: ["Bonne idée de noter C42, parce que notre voiture de location est si petite qu'on pourrait la perdre.", "Bonne idée de noter C42,", "parce que notre voiture de location est si petite qu'on pourrait la perdre."],
+      d: [["S", "C42, d'accord, c'est noté."], ["P", "Notre voiture de location est vraiment minuscule."], ["M", "Oui, C42, mais tu vas perdre le papier, comme d'habitude."]] },
+    { ok: ["C'est vrai qu'elle est minuscule, notre voiture de location, et rose bonbon : c'était la dernière qui restait à l'agence.", "C'est vrai qu'elle est minuscule, notre voiture de location,", "et rose bonbon : c'était la dernière qui restait à l'agence."],
+      d: [["S", "C'est vrai, elle est toute petite, notre voiture."], ["P", "Il faut absolument que je m'achète un manteau."], ["R", "Petite ? C'est un énorme 4x4."]] },
+    { ok: ["Oui, impossible de rater ce rose bonbon, et avec le volant à droite, j'ai mis dix minutes à trouver le clignotant.", "Oui, impossible de rater ce rose bonbon,", "et avec le volant à droite, j'ai mis dix minutes à trouver le clignotant."],
+      d: [["S", "Oui, elle est rose bonbon."], ["P", "Avec le volant à droite, j'ai mis dix minutes à trouver le clignotant."], ["M", "Oui, rose bonbon, mais je déteste le rose, on la rend tout de suite."]] },
+    { ok: ["Dix minutes pour le clignotant avec le volant à droite, c'est déjà bien, et le GPS ne parle qu'anglais, avec un accent écossais.", "Dix minutes pour le clignotant avec le volant à droite, c'est déjà bien,", "et le GPS ne parle qu'anglais, avec un accent écossais."],
+      d: [["S", "Ah oui, le volant à droite, ça surprend."], ["P", "Le GPS ne parle qu'anglais, avec un accent écossais."], ["H", "On devrait acheter des cartes postales."]] },
+    { ok: ["Ce GPS écossais nous a quand même amenées jusqu'ici, alors maintenant, place aux soldes !", "Ce GPS écossais nous a quand même amenées jusqu'ici,", "alors maintenant, place aux soldes !"],
+      d: [["S", "Oui, il a un drôle d'accent, ce GPS."], ["P", "Bon, place aux soldes !"], ["R", "Il n'y a pas de GPS dans cette voiture."]] },
+    { ok: ["Oui, les soldes, enfin ! J'ai fait une liste : un manteau, des bottes et un chapeau ridicule.", "Oui, les soldes, enfin !", "J'ai fait une liste : un manteau, des bottes et un chapeau ridicule."],
+      d: [["S", "Oui, les soldes, enfin."], ["P", "J'ai fait une liste : un manteau, des bottes et un chapeau ridicule."], ["M", "Oui, les soldes, mais il y a trop de monde, on reste dans la voiture."]] },
+    { ok: ["Un manteau, des bottes et un chapeau ridicule, très bonne liste, et moi, je me fixe un budget : cinquante livres, pas une de plus.", "Un manteau, des bottes et un chapeau ridicule, très bonne liste,", "et moi, je me fixe un budget : cinquante livres, pas une de plus."],
+      d: [["S", "Un manteau, des bottes et un chapeau, d'accord."], ["P", "Moi, je me fixe un budget de cinquante livres."], ["H", "Il faudra que je rachète du shampoing."]] },
+    { ok: ["Cinquante livres maximum, je retiens, et à la première folie, je te confisque ta carte bancaire.", "Cinquante livres maximum, je retiens,", "et à la première folie, je te confisque ta carte bancaire."],
+      d: [["S", "Cinquante livres, c'est noté."], ["P", "À la première folie, je confisque ta carte bancaire."], ["R", "Toi, un budget ? Tu ne sais pas ce que c'est."]] },
+    { ok: ["D'accord, tu pourras confisquer ma carte, alors ferme la voiture, et on y va.", "D'accord, tu pourras confisquer ma carte,", "alors ferme la voiture, et on y va."],
+      d: [["S", "D'accord, tu confisques ma carte."], ["P", "Ferme la voiture, on y va."], ["M", "Oui, tu peux confisquer ma carte, mais je n'en ai pas, seulement des euros."]] },
+    { ok: ["Oui, je ferme la voiture et on y va, je verrouille… et oups, les clés m'ont glissé des mains.", "Oui, je ferme la voiture et on y va,", "je verrouille… et oups, les clés m'ont glissé des mains."],
+      d: [["S", "Oui, je ferme la voiture."], ["P", "Je verrouille… et oups, les clés m'ont glissé des mains."], ["H", "Tu as vu la taille des pigeons, ici ?"]] },
+    { ok: ["Elles t'ont échappé, ces clés, et elles ont rebondi jusque dans la grille d'égout.", "Elles t'ont échappé, ces clés,", "et elles ont rebondi jusque dans la grille d'égout."],
+      d: [["S", "Ah, les clés t'ont échappé."], ["P", "Elles ont rebondi jusque dans la grille d'égout."], ["R", "Mais non, elles sont toujours dans ta main."]] },
+    { ok: ["Dans la grille d'égout, oh non… Attends, je les vois encore : elles brillent juste en dessous.", "Dans la grille d'égout, oh non…", "Attends, je les vois encore : elles brillent juste en dessous."],
+      d: [["S", "Oh non, dans la grille d'égout."], ["P", "Bon, on appelle l'agence de location."], ["M", "Oui, dans la grille, mais tant pis, on rentre en France à pied."]] },
+    { ok: ["Oui, elles brillent, presque à portée de main, et cette grille en fonte porte l'écusson de la Couronne.", "Oui, elles brillent, presque à portée de main,", "et cette grille en fonte porte l'écusson de la Couronne."],
+      d: [["S", "Oui, elles brillent, juste en dessous."], ["P", "Cette grille est en fonte, avec l'écusson de la Couronne."], ["R", "Je ne vois rien, elles sont perdues."]] },
+    { ok: ["Une grille royale, rien que ça, j'essaie de la soulever… elle ne bouge pas d'un millimètre.", "Une grille royale, rien que ça,", "j'essaie de la soulever… elle ne bouge pas d'un millimètre."],
+      d: [["S", "Oui, une grille en fonte avec un écusson."], ["P", "J'essaie de la soulever… elle ne bouge pas."], ["H", "Tu crois que les magasins ferment tard ?"]] },
+    { ok: ["Pas d'un millimètre, c'est vrai, elle est vissée avec quatre gros boulons rouillés.", "Pas d'un millimètre, c'est vrai,", "elle est vissée avec quatre gros boulons rouillés."],
+      d: [["S", "C'est vrai, elle ne bouge pas d'un millimètre."], ["P", "Elle est vissée avec quatre gros boulons rouillés."], ["M", "Oui, elle ne bouge pas, mais alors c'est fichu, on appelle un taxi."]] },
+    { ok: ["Quatre boulons rouillés, impossible de les dévisser à la main, il nous faudrait un outil.", "Quatre boulons rouillés, impossible de les dévisser à la main,", "il nous faudrait un outil."],
+      d: [["S", "Oui, quatre boulons rouillés."], ["P", "Il nous faudrait un outil."], ["R", "Des boulons ? Il n'y en a aucun, elle est juste posée."]] },
+    { ok: ["Un outil ? Ça tombe bien, j'ai une pince-monseigneur dans mon sac à main.", "Un outil ? Ça tombe bien,", "j'ai une pince-monseigneur dans mon sac à main."],
+      d: [["S", "Oui, il nous faudrait un outil."], ["P", "J'ai une pince-monseigneur dans mon sac à main."], ["M", "Un outil, oui, mais on n'en trouvera jamais un ici."]] },
+    { ok: ["Une pince-monseigneur dans ton sac à main ?! En vingt ans d'amitié, tu ne m'as jamais dit ça.", "Une pince-monseigneur dans ton sac à main ?!", "En vingt ans d'amitié, tu ne m'as jamais dit ça."],
+      d: [["S", "Ah, tu as une pince-monseigneur."], ["P", "En vingt ans d'amitié, tu ne m'as jamais dit ça."], ["R", "Ton sac est vide, je le vois d'ici."]] },
+    { ok: ["Eh oui, vingt ans d'amitié et encore des surprises : avant le yoga, j'étais serrurière.", "Eh oui, vingt ans d'amitié et encore des surprises :", "avant le yoga, j'étais serrurière."],
+      d: [["S", "Eh oui, vingt ans d'amitié."], ["P", "Avant le yoga, j'étais serrurière."], ["H", "On devrait acheter un parapluie, non ?"]] },
+    { ok: ["Serrurière, toi ! Alors c'est ton métier : vas-y, force la grille, je fais le guet.", "Serrurière, toi ! Alors c'est ton métier :", "vas-y, force la grille, je fais le guet."],
+      d: [["S", "Serrurière, toi !"], ["P", "Vas-y, force la grille, je fais le guet."], ["M", "Serrurière, d'accord, mais c'est interdit d'ouvrir une grille, on va se faire arrêter."]] },
+    { ok: ["Tu fais le guet, je force… clac, elle s'ouvre, et dessous, une échelle descend dans le noir.", "Tu fais le guet, je force… clac, elle s'ouvre,", "et dessous, une échelle descend dans le noir."],
+      d: [["S", "D'accord, tu fais le guet."], ["P", "Clac, la grille s'ouvre. Dessous, une échelle descend dans le noir."], ["R", "Non, je ne touche pas à cette grille."]] },
+    { ok: ["Une échelle dans le noir… et mes clés ne sont plus là : on les entend tinter tout en bas.", "Une échelle dans le noir…", "et mes clés ne sont plus là : on les entend tinter tout en bas."],
+      d: [["S", "Oui, une échelle dans le noir."], ["P", "Mes clés ne sont plus là, on les entend tinter tout en bas."], ["M", "Une échelle, oui, mais je refuse de descendre là-dedans."]] },
+    { ok: ["Oui, ça tinte tout en bas, on descend les chercher : j'éclaire avec mon téléphone.", "Oui, ça tinte tout en bas,", "on descend les chercher : j'éclaire avec mon téléphone."],
+      d: [["S", "Oui, ça tinte tout en bas."], ["P", "On descend les chercher, j'éclaire avec mon téléphone."], ["H", "Tu as vu le prix de l'essence ici ?"]] },
+    { ok: ["Bonne idée, la lampe du téléphone, et plus on descend, plus ça sent… le beurre chaud.", "Bonne idée, la lampe du téléphone,", "et plus on descend, plus ça sent… le beurre chaud."],
+      d: [["S", "D'accord, tu éclaires avec ton téléphone."], ["P", "Plus on descend, plus ça sent le beurre chaud."], ["R", "Non, on ne descend pas, c'est trop noir."]] },
+    { ok: ["Le beurre chaud, je le sens aussi, et en bas, il y a une porte avec un panneau : “Centre de la Terre”.", "Le beurre chaud, je le sens aussi,", "et en bas, il y a une porte avec un panneau : “Centre de la Terre”."],
+      d: [["S", "Oui, ça sent le beurre chaud."], ["P", "En bas, il y a une porte avec un panneau : “Centre de la Terre”."], ["M", "Le beurre chaud, oui, mais j'ai trop faim, on remonte manger."]] },
+    { ok: ["Le “Centre de la Terre”, rien que ça ! Je pousse la porte… et ça sent encore plus le beurre.", "Le “Centre de la Terre”, rien que ça !", "Je pousse la porte… et ça sent encore plus le beurre."],
+      d: [["S", "Oui, “Centre de la Terre”, c'est écrit."], ["P", "Je pousse la porte, et ça sent encore plus le beurre."], ["R", "Il n'y a pas de porte, c'est un mur."]] },
+    { ok: ["Oui, une vraie odeur de beurre, c'est une boutique de scones : “Au Centre de la Terre, depuis 1890”.", "Oui, une vraie odeur de beurre,", "c'est une boutique de scones : “Au Centre de la Terre, depuis 1890”."],
+      d: [["S", "Oui, ça sent encore plus le beurre."], ["P", "C'est une boutique de scones : “Au Centre de la Terre, depuis 1890”."], ["H", "Au fait, on mange où ce soir ?"]] },
+    { ok: ["Une boutique de scones sous un parking, il fallait le savoir, et la vendeuse tient mes clés au bout d'une pince à gâteaux.", "Une boutique de scones sous un parking, il fallait le savoir,", "et la vendeuse tient mes clés au bout d'une pince à gâteaux."],
+      d: [["S", "Une boutique de scones, d'accord."], ["P", "La vendeuse tient mes clés au bout d'une pince à gâteaux."], ["M", "Une boutique de scones, oui, mais on n'a pas le temps, on remonte."]] },
+    { ok: ["Tes clés au bout de sa pince à gâteaux, quelle coïncidence, elle dit qu'elles sont tombées par la cheminée, droit dans la pâte.", "Tes clés au bout de sa pince à gâteaux, quelle coïncidence,", "elle dit qu'elles sont tombées par la cheminée, droit dans la pâte."],
+      d: [["S", "Oui, elle tient tes clés avec sa pince à gâteaux."], ["P", "Elles sont tombées par la cheminée, droit dans la pâte."], ["R", "Ce ne sont pas tes clés, les tiennes ont un porte-clés."]] },
+    { ok: ["Tombées dans la pâte à scones, les pauvres, et en échange, elle veut qu'on lui achète une douzaine de scones.", "Tombées dans la pâte à scones, les pauvres,", "et en échange, elle veut qu'on lui achète une douzaine de scones."],
+      d: [["S", "Oui, tombées dans la pâte à scones."], ["P", "En échange, elle veut qu'on lui achète une douzaine de scones."], ["H", "Tu crois que la voiture est bien fermée ?"]] },
+    { ok: ["Une douzaine de scones, marché conclu, ça fera notre premier achat des soldes : quarante-neuf livres.", "Une douzaine de scones, marché conclu,", "ça fera notre premier achat des soldes : quarante-neuf livres."],
+      d: [["S", "D'accord, une douzaine de scones."], ["P", "Ça fera notre premier achat des soldes."], ["M", "Une douzaine, oui, mais c'est beaucoup trop, on en prend deux."]] },
+    { ok: ["Quarante-neuf livres, juste sous ton budget, bravo, et cette fois, c'est toi qui gardes les clés !", "Quarante-neuf livres, juste sous ton budget, bravo,", "et cette fois, c'est toi qui gardes les clés !"],
+      d: [["S", "Quarante-neuf livres, d'accord."], ["P", "Cette fois, c'est toi qui gardes les clés !"], ["R", "Non, quarante-neuf livres, c'est hors budget, on n'achète rien."]] }
   ];
 
   var N = TURNS.length;
@@ -498,12 +512,13 @@ button {
         '<h1>Oui, et…<br>à Londres</h1>' +
         '<p class="intro-sub">' + N + ' répliques · Sandrine &amp; Nathalie</p>' +
         TRIP +
-        '<p class="rule">' + t("Deux copines, une voiture de location et un parking souterrain. À chaque réplique, choisissez la réponse qui accepte la proposition de l'autre et ajoute une idée nouvelle.") + '</p>' +
+        '<p class="rule">' + t("Deux copines, une voiture de location et un parking souterrain. À chaque réplique, choisissez la réponse qui reprend ce que l'autre vient de dire, puis propose une idée nouvelle.") + '</p>' +
         '<ul class="legend">' +
-          '<li><span class="tag tag-ok">Oui, et…</span>' + t("accepte et fait avancer") + '</li>' +
+          '<li><span class="tag tag-ok">Oui, et…</span>' + t("reprend, puis propose") + '</li>' +
+          '<li><span class="tag tag-S">Oui sans ajout</span>' + t("reprend sans proposer") + '</li>' +
+          '<li><span class="tag tag-P">Sans reprise</span>' + t("propose sans reprendre") + '</li>' +
+          '<li><span class="tag tag-M">Oui, mais</span>' + t("reprend, puis annule") + '</li>' +
           '<li><span class="tag tag-R">Refus</span>' + t("nie la proposition") + '</li>' +
-          '<li><span class="tag tag-M">Oui, mais</span>' + t("accepte puis annule") + '</li>' +
-          '<li><span class="tag tag-S">Oui sans ajout</span>' + t("fait du surplace") + '</li>' +
           '<li><span class="tag tag-H">Hors sujet</span>' + t("ignore la proposition") + '</li>' +
         '</ul>' +
         '<button class="btn-main" id="start" type="button">Commencer</button>' +
@@ -522,7 +537,7 @@ button {
       if (answered) cls += k === 0 ? " is-right" : (k === picked ? " is-wrong" : " is-other");
       opts += '<li><button class="' + cls + '" type="button" data-k="' + k + '"' + (answered ? " disabled" : "") + '>' +
         '<span class="opt-n" aria-hidden="true">' + (n + 1) + '</span>' +
-        '<span class="opt-body"><span class="opt-text">«&nbsp;' + t(o.text) + '&nbsp;»</span>' +
+        '<span class="opt-body"><span class="opt-text">«&nbsp;' + (k === 0 && answered ? '<span class="rep">' + t(TURNS[turn].ok[1]) + '</span> ' + t(TURNS[turn].ok[2]) : t(o.text)) + '&nbsp;»</span>' +
         '<span class="opt-tag tag tag-' + o.type + '">' + esc(TYPES[o.type].tag) + '</span></span>' +
       '</button></li>';
     }
@@ -535,8 +550,8 @@ button {
         (ok ? "" : '<p class="why">' + t(TYPES[option(picked).type].why) + '</p>' +
                    '<p class="good-line"><span class="gl-k">La réponse qui fait avancer</span>«&nbsp;' + t(T.ok[0]) + '&nbsp;»</p>') +
         '<ul class="ap">' +
-          '<li><span class="ap-k">✓ Accepte</span><span>' + t(cap(T.ok[1])) + '</span></li>' +
-          '<li><span class="ap-k">+ Ajoute</span><span>' + t(cap(T.ok[2])) + '</span></li>' +
+          '<li><span class="ap-k">✓ Reprend</span><span>«&nbsp;' + t(T.ok[1]) + '&nbsp;»</span></li>' +
+          '<li><span class="ap-k">+ Propose</span><span>«&nbsp;' + t(T.ok[2]) + '&nbsp;»</span></li>' +
         '</ul>' +
         '<button class="btn-main" id="next" type="button">' + (last ? "Voir toute l'histoire" : "Réplique suivante") + '</button>' +
       '</div>';
@@ -563,8 +578,8 @@ button {
   function renderEnd() {
     var msg;
     if (good >= N - 3) msg = "Vous acceptez et vous relancez comme un improvisateur aguerri.";
-    else if (good >= Math.round(N * 0.66)) msg = "Belle écoute. Repérez les « Oui, mais » et les « Oui » sans ajout qui vous ont piégé.";
-    else msg = "Relisez l'histoire à voix haute, puis rejouez : chaque bonne réponse accepte une chose et en ajoute une autre.";
+    else if (good >= Math.round(N * 0.66)) msg = "Belle écoute. Repérez les réponses sans reprise et les « Oui » sans ajout qui vous ont piégé.";
+    else msg = "Relisez l'histoire à voix haute, puis rejouez : chaque bonne réponse reprend ce que l'autre a dit, puis propose une idée.";
     main.innerHTML =
       '<section class="end">' +
         '<p class="end-label">Histoire terminée</p>' +
